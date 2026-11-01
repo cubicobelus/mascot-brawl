@@ -1,16 +1,21 @@
 'use strict';
 // A fighter: movement, moves, collision with the stage, getting launched. x, y are the feet.
+// Things the game loop must handle (projectiles, screen effects) go out through this.events.
+
+const METER_MAX = 100;
 
 class Fighter {
-  constructor(idx, mascot, isCpu, stocks) {
+  constructor(idx, data, isCpu, stocks) {
     this.idx = idx;
-    this.m = mascot;
+    this.m = data;
     this.isCpu = isCpu;
-    this.w = mascot.w;
-    this.h = mascot.h;
+    this.w = data.w;
+    this.h = data.h;
     this.stocks = stocks;
     this.cpu = {};
     this.t = 0;
+    this.meter = 0;
+    this.events = [];
     this.spawn(STAGE.spawns[idx].x, STAGE.spawns[idx].y);
     this.facing = idx === 0 ? 1 : -1;
     this.invuln = 0;
@@ -18,7 +23,8 @@ class Fighter {
 
   spawn(x, y) {
     Object.assign(this, { x, y, vx: 0, vy: 0, damage: 0, onGround: false, onPlat: false, jumps: this.m.airJumps,
-      move: null, hitstun: 0, drop: 0, fastFall: false, specialUsed: false, dead: 0, invuln: 120, hitActive: false });
+      move: null, hitstun: 0, drop: 0, fastFall: false, upUsed: false, sideUsed: false, dead: 0, invuln: 120,
+      hitActive: false });
   }
 
   get out() { return this.stocks <= 0 && this.dead > 0; }
@@ -30,7 +36,13 @@ class Fighter {
     return { x: this.x + b.dx * this.facing - b.w / 2, y: this.y + b.dy - b.h / 2, w: b.w, h: b.h };
   }
 
-  startMove(name) { this.move = { name, def: this.m.moves[name], f: 0, hit: false }; }
+  startMove(name) { this.move = { name, def: this.m.moves[name], f: 0, cur: 0, hit: false }; }
+
+  // true while the current move's armor or counter window ([from, to] frames) is open
+  windowOn(key) {
+    const w = this.move && this.move.def[key];
+    return !!w && this.move.cur >= w[0] && this.move.cur <= w[1];
+  }
 
   update(c) {
     this.t++;
@@ -55,7 +67,7 @@ class Fighter {
     else this.vy = Math.max(cap, this.vy * 0.97);
 
     this.physics();
-    if (this.onGround && !this.move) this.specialUsed = false;
+    if (this.onGround && !this.move) this.upUsed = this.sideUsed = false;
   }
 
   control(c) {
@@ -70,32 +82,55 @@ class Fighter {
       if (this.onGround) { this.vy = -m.jump; this.onGround = false; }
       else if (this.jumps > 0) { this.jumps--; this.vy = -m.jump * 0.9; this.fastFall = false; }
     }
+    if (this.trySuper(c)) return;
     if (c.attackP) {
       let name = 'jab';
       if (c.up) name = 'up';
       else if (c.down) name = this.onGround ? 'down' : 'dair';
       else if (dir) name = 'side';
       this.startMove(name);
-    } else if (c.specialP && !this.specialUsed) {
-      this.specialUsed = true;
-      this.startMove('special');
+    } else if (c.specialP) {
+      const name = c.up ? 'upB' : c.down ? 'downB' : dir ? 'sideB' : 'neutralB';
+      // up and side specials work once per trip through the air
+      if (name === 'upB' && this.upUsed) return;
+      if (name === 'sideB' && this.sideUsed) return;
+      if (name === 'upB') this.upUsed = true;
+      if (name === 'sideB') this.sideUsed = true;
+      this.startMove(name);
     } else if (c.downP) {
       if (this.onGround && this.onPlat) { this.drop = 12; this.onGround = false; }
       else if (!this.onGround && this.vy > -2) this.fastFall = true;
     }
   }
 
+  // Heisman: attack and special together with a full meter. The two presses rarely land on the same tick,
+  // so it can also take over the first few frames of the move the first press started.
+  trySuper(c) {
+    if (this.meter < METER_MAX || !((c.attackP && c.special) || (c.specialP && c.attack))) return false;
+    if (this.move && (this.move.name === 'super' || this.move.f > 4)) return false;
+    this.meter = 0;
+    this.startMove('super');
+    this.events.push({ type: 'super' });
+    return true;
+  }
+
   runMove(c) {
+    this.trySuper(c);
     const mv = this.move, d = mv.def, f = mv.f++;
+    mv.cur = f;
     if (d.onFrame) d.onFrame(f, this);
-    this.hitActive = f >= d.startup && f < d.startup + d.active && !mv.hit;
+    if (d.projectile && f === d.projectile.at) this.events.push({ type: 'projectile', p: d.projectile });
+    this.hitActive = !!d.box && f >= d.startup && f < d.startup + d.active && !mv.hit;
     if (!this.onGround) {
       if (!d.noDrift) {
         const dir = (c.right ? 1 : 0) - (c.left ? 1 : 0);
         this.vx += Math.max(-0.25, Math.min(0.25, dir * this.m.air - this.vx));
       }
     } else if (!d.keepMomentum) this.vx *= 0.8;
-    if (mv.f >= d.startup + d.active + d.recovery || (d.endOnLand && this.onGround && f > d.startup)) this.move = null;
+    if (mv.f >= d.startup + d.active + d.recovery || (d.endOnLand && this.onGround && f > d.startup)) {
+      this.move = null;
+      this.hitActive = false;
+    }
   }
 
   physics() {
@@ -137,26 +172,48 @@ class Fighter {
     this.stocks--;
     this.dead = 70;
     this.move = null;
+    this.hitActive = false;
     this.hitstun = 0;
   }
 
-  takeHit(attacker, d) {
+  // src is the fighter or projectile that hit; d holds the hit fields. Returns the knockback.
+  takeHit(src, d, armored) {
     this.damage += d.dmg;
-    const kb = (d.base + this.damage * d.scale) / this.m.weight;
-    const a = d.angle * Math.PI / 180;
-    this.vx = Math.cos(a) * kb * attacker.facing;
-    this.vy = -Math.sin(a) * kb;
-    this.hitstun = Math.floor(kb * 2.4);
+    if (armored) return 0;
+    const dir = d.away ? (Math.sign(this.x - src.x) || src.facing) : src.facing * (d.back ? -1 : 1);
+    let kb;
+    if (d.pull) {
+      kb = d.pull;
+      this.vx = (Math.sign(src.x - this.x) || -dir) * d.pull;
+      this.vy = -3;
+      this.hitstun = 22;
+    } else if (d.stun) {
+      kb = 2;
+      this.vx = dir * 2;
+      this.vy = -2;
+      this.hitstun = d.stun;
+    } else {
+      kb = (d.base + this.damage * d.scale) / this.m.weight;
+      const a = d.angle * Math.PI / 180;
+      this.vx = Math.cos(a) * kb * dir;
+      this.vy = -Math.sin(a) * kb;
+      this.hitstun = Math.floor(kb * 2.4);
+    }
     this.move = null;
+    this.hitActive = false;
     this.onGround = false;
     this.fastFall = false;
-    this.specialUsed = false;
-    this.facing = -attacker.facing;
+    this.upUsed = this.sideUsed = false;
+    this.facing = -dir;
     return kb;
   }
 
   draw(ctx) {
     if (this.dead > 0) return;
+    if (this.meter >= METER_MAX) {
+      ctx.fillStyle = `rgba(255, 215, 90, ${0.35 + 0.2 * Math.sin(this.t / 5)})`;
+      ctx.beginPath(); ctx.ellipse(this.x, this.y, this.w * 0.8, 9, 0, 0, Math.PI * 2); ctx.fill();
+    }
     if (this.invuln > 0 && Math.floor(this.invuln / 4) % 2 === 0) ctx.globalAlpha = 0.45;
     ctx.save();
     ctx.translate(this.x, this.y);
@@ -166,6 +223,13 @@ class Fighter {
     drawMascot(ctx, this.m, this.t, pose);
     ctx.restore();
     ctx.globalAlpha = 1;
+    if (this.windowOn('armor') || this.windowOn('counter')) {
+      ctx.strokeStyle = this.windowOn('counter') ? 'rgba(120, 220, 255, 0.8)' : 'rgba(255, 255, 255, 0.6)';
+      ctx.lineWidth = 3;
+      const b = this.box();
+      roundRect(ctx, b.x - 6, b.y - 6, b.w + 12, b.h + 12, 12);
+      ctx.stroke();
+    }
     if (this.hitActive) {
       const b = this.hitbox();
       ctx.fillStyle = 'rgba(255,255,255,0.35)';

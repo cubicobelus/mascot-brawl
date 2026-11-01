@@ -1,7 +1,20 @@
 'use strict';
-// The roster: stats, moves and drawing for each mascot.
+// Builds a fighter's stats and moves from its roster entry, and draws mascots.
 // Move boxes: dx is the centre offset forward of the feet, dy the centre offset from the feet (negative is up).
 // angle is the launch angle in degrees (0 forward, 90 straight up, negative is down).
+
+const WEIGHTS = {
+  Light:  { walk: 4.5, air: 4.1, gravity: 0.44, fallSpeed: 8.5, jump: 11.2, airJumps: 2, weight: 0.85, power: 0.85, speed: 0.85 },
+  Medium: { walk: 4.0, air: 3.6, gravity: 0.52, fallSpeed: 10, jump: 12, airJumps: 1, weight: 1.0, power: 1.0, speed: 1.0 },
+  Heavy:  { walk: 3.4, air: 3.1, gravity: 0.58, fallSpeed: 11.5, jump: 12.2, airJumps: 1, weight: 1.22, power: 1.15, speed: 1.12 },
+};
+
+const SHAPES = {
+  bulldog: { w: 56, h: 62 },
+  tiger: { w: 54, h: 64 },
+  longhorn: { w: 60, h: 68 },
+  duck: { w: 44, h: 56 },
+};
 
 function baseMoves(h, power, speed) {
   const f = n => Math.max(1, Math.round(n * speed));
@@ -16,51 +29,16 @@ function baseMoves(h, power, speed) {
   };
 }
 
-const MASCOTS = [
-  {
-    id: 'bulldog', name: 'Bulldog', blurb: 'Heavy hitter, slow, hard to launch',
-    color: '#ba0c2f', trim: '#1a1a1a', skin: '#d8c3a5',
-    w: 56, h: 62, walk: 3.3, air: 3.0, gravity: 0.56, fallSpeed: 11, jump: 11.8, airJumps: 1, weight: 1.25,
-    power: 1.2, speed: 1.15,
-    special: { name: 'Ground Pound', startup: 8, active: 44, recovery: 10, endOnLand: true, noDrift: true,
-      box: { dx: 0, dy: -12, w: 74, h: 40 }, dmg: 13, base: 8, scale: 0.12, angle: 70,
-      onFrame(f, me) { if (f === 0) { me.vx *= 0.3; me.vy = -6; } if (f === 8) { me.vx = 0; me.vy = 18; } } },
-  },
-  {
-    id: 'duck', name: 'Duck', blurb: 'Light and quick, three jumps',
-    color: '#154733', trim: '#fee123', skin: '#fee123',
-    w: 44, h: 56, walk: 4.6, air: 4.2, gravity: 0.42, fallSpeed: 8, jump: 11, airJumps: 2, weight: 0.85,
-    power: 0.85, speed: 0.8,
-    special: { name: 'Wing Dash', startup: 5, active: 14, recovery: 12, noDrift: true, gravity: 0.4,
-      box: { dx: 18, dy: -30, w: 52, h: 42 }, dmg: 7, base: 5, scale: 0.09, angle: 50,
-      onFrame(f, me) { if (f === 5) { me.vx = 12 * me.facing; me.vy = -8; } } },
-  },
-  {
-    id: 'longhorn', name: 'Longhorn', blurb: 'Long sideways charge, big reach',
-    color: '#bf5700', trim: '#ffffff', skin: '#bf5700',
-    w: 60, h: 68, walk: 3.7, air: 3.2, gravity: 0.6, fallSpeed: 12, jump: 12.3, airJumps: 1, weight: 1.15,
-    power: 1.05, speed: 1.05,
-    special: { name: 'Stampede', startup: 10, active: 24, recovery: 14, noDrift: true, keepMomentum: true, gravity: 0.2,
-      box: { dx: 36, dy: -40, w: 46, h: 46 }, dmg: 12, base: 8, scale: 0.12, angle: 40,
-      onFrame(f, me) {
-        if (f < 10) me.vx *= 0.8;
-        else if (f < 34) { me.vx = 12 * me.facing; if (f === 10) me.vy = Math.min(me.vy, -3); }
-      } },
-  },
-  {
-    id: 'tiger', name: 'Tiger', blurb: 'All-rounder with a high pounce',
-    color: '#461d7c', trim: '#fdd023', skin: '#f39b2b',
-    w: 50, h: 62, walk: 4.2, air: 3.8, gravity: 0.52, fallSpeed: 10, jump: 12, airJumps: 1, weight: 1.0,
-    power: 1.0, speed: 1.0,
-    special: { name: 'Pounce', startup: 5, active: 16, recovery: 16, noDrift: true,
-      box: { dx: 22, dy: -40, w: 48, h: 48 }, dmg: 10, base: 7, scale: 0.1, angle: 65,
-      onFrame(f, me) { if (f === 5) { me.vx = 7 * me.facing; me.vy = -14; } } },
-  },
-];
+const playable = entry => !!KITS[entry.id];
 
-for (const m of MASCOTS) {
-  m.moves = baseMoves(m.h, m.power, m.speed);
-  m.moves.special = m.special;
+const fighterCache = {};
+function fighterData(entry) {
+  if (fighterCache[entry.id]) return fighterCache[entry.id];
+  const W = WEIGHTS[entry.weight], S = SHAPES[entry.kind];
+  const d = Object.assign({}, W, S, { id: entry.kind, name: entry.mascot, school: entry.school,
+    color: entry.color, trim: entry.trim, skin: entry.skin });
+  d.moves = Object.assign(baseMoves(d.h, W.power, W.speed), KITS[entry.id]);
+  return (fighterCache[entry.id] = d);
 }
 
 // Draws a mascot standing at (0, 0) feet, facing right. Caller handles position and flip.
