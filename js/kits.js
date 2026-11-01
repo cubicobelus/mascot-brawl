@@ -8,7 +8,8 @@
 //   projectile: { at, dx, dy, vx, vy, w, h, life, look, pierce, gravity, ...hit fields } spawned on frame "at"
 //   armor: [from, to] frames where hits do damage but no knockback
 //   counter: [from, to] frames where a hit is answered with counterHit (hit fields)
-//   gravity (multiplier), noDrift, keepMomentum, endOnLand, onFrame(f, me), banner (super name)
+//   gravity (multiplier), noDrift, keepMomentum, endOnLand, onFrame(f, me), banner (super name), rope (draw as a rope)
+// onFrame can also push its own projectile events or start another move (Pete's reload).
 
 const KITS = {
   georgia: {
@@ -60,5 +61,42 @@ const KITS = {
     super: { name: 'Bevo Rampage', banner: 'Bevo Rampage', startup: 16, active: 50, recovery: 16, noDrift: true, keepMomentum: true,
       gravity: 0.2, armor: [0, 66], box: { dx: 36, dy: -40, w: 70, h: 64 }, dmg: 24, base: 11, scale: 0.16, angle: 42,
       onFrame(f, me) { if (f < 16) me.vx *= 0.7; else if (f < 66) { me.vx = 15 * me.facing; if (f === 16) me.vy = Math.min(me.vy, -2); } } },
+  },
+  okstate: {
+    neutralB: { name: 'Six Shooter', startup: 5, active: 1, recovery: 8,
+      onFrame(f, me) {
+        if (f === 0 && me.ammo === 0) me.startMove('reload');
+        else if (f === 5) me.ammo--;
+      },
+      projectile: { at: 5, dx: 30, dy: -38, vx: 17, vy: 0, w: 14, h: 8, life: 45, look: 'bullet', dmg: 3, base: 3, scale: 0.035, angle: 12 } },
+    reload: { name: 'Reload', startup: 40, active: 0, recovery: 0,
+      onFrame(f, me) { if (f === 39) me.ammo = me.m.ammo; } },
+    sideB: { name: 'Lasso', startup: 10, active: 8, recovery: 20, rope: true, noDrift: true,
+      box: { dx: 95, dy: -40, w: 140, h: 22 }, dmg: 4, pull: 10,
+      onFrame(f, me) {
+        if (f < 10) { me.vx *= 0.85; if (me.vy > 2) me.vy = 2; }
+        // off the stage, the rope catches the field's edge and reels Pete in
+        const S = STAGE.main, off = me.x < S.x1 || me.x > S.x2;
+        if (f >= 10 && f < 18 && off && !me.onGround && !me.move.reeled) {
+          const tip = me.x + me.facing * 165;
+          for (const lx of [S.x1, S.x2]) {
+            const caught = me.facing > 0 ? lx > me.x && lx < tip : lx < me.x && lx > tip;
+            if (caught && Math.abs(S.y - (me.y - 40)) < 70) { me.vx = me.facing * 11; me.vy = -9; me.move.reeled = true; }
+          }
+        }
+      } },
+    upB: { name: 'Pistol Recoil', startup: 6, active: 1, recovery: 22,
+      onFrame(f, me) {
+        if (f !== 6) return;
+        me.vy = -15.5;
+        me.vx = 2 * me.facing;
+        for (const s of [-1, 1]) me.events.push({ type: 'projectile', p: { dx: s * 10, dy: 0, vx: s * 1.5, vy: 13, w: 10, h: 14,
+          life: 30, look: 'bullet', dmg: 5, base: 6, scale: 0.06, angle: -60 } });
+      } },
+    downB: { name: 'Quick Draw', startup: 30, active: 1, recovery: 14, counter: [2, 26],
+      counterHit: { dmg: 12, base: 9, scale: 0.13, angle: 30 } },
+    super: { name: 'High Noon', banner: 'High Noon', startup: 60, active: 1, recovery: 20, noDrift: true, gravity: 0.2,
+      onFrame(f, me) { if (f === 0) me.events.push({ type: 'sepia', t: 110 }); me.vx *= 0.8; if (me.vy > 1) me.vy = 1; },
+      projectile: { at: 60, dx: 34, dy: -38, vx: 28, vy: 0, w: 26, h: 16, life: 60, look: 'bullet', dmg: 30, base: 14, scale: 0.18, angle: 28 } },
   },
 };

@@ -1,5 +1,5 @@
 'use strict';
-// Screens (select, fight, result), the fixed-step loop, hits, projectiles, effects and the HUD.
+// Screens (select, stage, fight, result), the fixed-step loop, hits, projectiles, effects and the HUD.
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -18,7 +18,11 @@ const game = {
   freeze: 0,
   shake: 0,
   dark: 0,
+  sepia: 0,
   banner: null,
+  stageIdx: 0,
+  stage: STAGES[0],
+  hz: null,
   sparks: [],
   paused: false,
   winner: null,
@@ -27,8 +31,9 @@ const game = {
 
 function startFight() {
   game.fighters = [0, 1].map(i => new Fighter(i, fighterData(ROSTER[game.sel[i].i]), i === 1 && game.p2cpu, STOCKS));
+  const stage = STAGES[game.stageIdx];
   Object.assign(game, { screen: 'fight', countdown: 150, sparks: [], projectiles: [], paused: false, winner: null,
-    dark: 0, banner: null, freeze: 0, shake: 0 });
+    dark: 0, sepia: 0, banner: null, freeze: 0, shake: 0, stage, hz: stage.init ? stage.init() : null });
   Input.clear();
 }
 
@@ -43,6 +48,7 @@ function tick() {
   game.t++;
   if (game.note.t > 0) game.note.t--;
   if (game.screen === 'select') tickSelect();
+  else if (game.screen === 'stage') tickStage();
   else if (game.screen === 'fight') tickFight();
   else if (game.screen === 'result' && (Input.hit('KeyF') || Input.hit('KeyK') || Input.hit('Enter'))) toSelect();
   Input.endTick();
@@ -80,7 +86,23 @@ function tickSelect() {
       if (c2.attackP) tryReady(s2);
     } else if (c2.specialP) s2.ready = false;
   }
-  if (s1.ready && s2.ready) startFight();
+  if (s1.ready && s2.ready) toStageSelect();
+}
+
+// Stage pick: starts on a picked mascot's home stadium if there is one.
+function toStageSelect() {
+  game.screen = 'stage';
+  const ids = game.sel.map(s => ROSTER[s.i].id);
+  const home = STAGES.findIndex(st => st.home && ids.includes(st.home));
+  if (home >= 0) game.stageIdx = home;
+}
+
+function tickStage() {
+  const c = Input.read(0), n = STAGES.length;
+  if (c.leftP || c.upP) game.stageIdx = (game.stageIdx + n - 1) % n;
+  if (c.rightP || c.downP) game.stageIdx = (game.stageIdx + 1) % n;
+  if (c.attackP || Input.hit('Enter')) startFight();
+  else if (c.specialP || Input.hit('Escape')) toSelect();
 }
 
 function tickFight() {
@@ -93,6 +115,7 @@ function tickFight() {
   if (game.freeze > 0) { game.freeze--; return; }
   if (game.countdown > 0) { game.countdown--; return; }
   if (game.dark > 0) game.dark--;
+  if (game.sepia > 0) game.sepia--;
 
   const [a, b] = game.fighters;
   const ca = a.isCpu ? cpuControls(a, b) : Input.read(0);
@@ -106,12 +129,14 @@ function tickFight() {
   if (aHit) applyHit(a, b, aHit);
   if (bHit) applyHit(b, a, bHit);
   updateProjectiles();
+  if (game.stage.update) game.stage.update(game.hz, game.fighters, applyHit);
 
   for (const f of game.fighters) {
     if (f.outOfBounds()) {
       burst(Math.max(20, Math.min(STAGE.w - 20, f.x)), Math.max(20, Math.min(STAGE.h - 20, f.y - f.h / 2)), P_COLORS[f.idx], 40, 9);
       game.shake = 14;
       f.ko();
+      if (game.stage.onKO) game.stage.onKO(game.hz);
     }
   }
   const alive = game.fighters.filter(f => !f.out);
@@ -128,6 +153,7 @@ function handleEvents(f) {
       game.banner = { text: f.move.def.banner, sub: `${f.m.name}, ${f.m.school}`, color: f.m.color, t: 75 };
       game.freeze = 35;
     } else if (e.type === 'dark') game.dark = e.t;
+    else if (e.type === 'sepia') game.sepia = game.sepiaMax = e.t;
     else if (e.type === 'shake') game.shake = Math.max(game.shake, e.amount);
   }
   f.events.length = 0;
@@ -160,7 +186,8 @@ function applyHit(src, def, move) {
 }
 
 function gainMeter(attacker, victim, dmg) {
-  attacker.meter = Math.min(METER_MAX, attacker.meter + dmg * 1.2);
+  // stage hazards hit too, but only fighters fill a meter by hitting
+  if (attacker instanceof Fighter) attacker.meter = Math.min(METER_MAX, attacker.meter + dmg * 1.2);
   victim.meter = Math.min(METER_MAX, victim.meter + dmg * 0.7);
 }
 
@@ -214,9 +241,10 @@ function updateSparks() {
 function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (game.screen === 'select') { drawSelect(); return; }
+  if (game.screen === 'stage') { drawStageSelect(); return; }
   const s = game.shake;
   ctx.setTransform(1, 0, 0, 1, (Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
-  drawStage(ctx);
+  game.stage.draw(ctx, game.hz);
   for (const p of game.projectiles) drawProjectile(p);
   for (const f of game.fighters) f.draw(ctx);
   for (const p of game.sparks) {
@@ -225,8 +253,10 @@ function draw() {
     ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
   }
   ctx.globalAlpha = 1;
+  if (game.stage.drawFront) game.stage.drawFront(ctx, game.hz);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (game.dark > 0) drawDark();
+  if (game.sepia > 0) drawSepia();
   drawHud();
   if (game.banner) drawBanner(game.banner);
   if (game.countdown > 0) bigText(game.countdown > 30 ? String(Math.ceil((game.countdown - 30) / 40)) : 'GO!', 360);
@@ -292,6 +322,40 @@ function drawDark() {
   ctx.drawImage(darkLayer, 0, 0);
 }
 const darkLayer = Object.assign(document.createElement('canvas'), { width: 1280, height: 720 });
+
+// High Noon: the scene turns sepia and a clock ticks to twelve before the shot.
+function drawSepia() {
+  const a = Math.min(1, game.sepia / 15, (game.sepiaMax - game.sepia) / 8);
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.globalCompositeOperation = 'saturation';
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(0, 0, STAGE.w, STAGE.h);
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = '#e8c08a';
+  ctx.fillRect(0, 0, STAGE.w, STAGE.h);
+  ctx.restore();
+  const left = Math.max(0, game.sepia - (game.sepiaMax - 95));
+  const x = 640, y = 110, r = 46;
+  ctx.globalAlpha = a;
+  ctx.fillStyle = '#f4e6c8';
+  ctx.strokeStyle = '#3a2a1a';
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#3a2a1a';
+  for (let k = 0; k < 12; k++) {
+    const t = k / 12 * Math.PI * 2;
+    ctx.fillRect(x + Math.sin(t) * (r - 9) - 2, y - Math.cos(t) * (r - 9) - 2, 4, 4);
+  }
+  const minute = -left / 95 * Math.PI * 1.2;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.sin(minute) * (r - 12), y - Math.cos(minute) * (r - 12)); ctx.stroke();
+  ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.sin(minute / 12) * (r - 22), y - Math.cos(minute / 12) * (r - 22)); ctx.stroke();
+  ctx.lineCap = 'butt';
+  ctx.globalAlpha = 1;
+}
 
 function drawBanner(b) {
   const a = Math.min(1, b.t / 10);
@@ -446,6 +510,38 @@ function drawSelect() {
   ctx.fillStyle = '#9fb0c8';
   ctx.font = '12px system-ui, sans-serif';
   ctx.fillText(`Player 2: ${game.p2cpu ? 'CPU' : 'human'} (C to switch).  Fight: move, jump, F/K attack, G/L special, attack + special with a full meter for the Heisman.`, STAGE.w / 2, 710);
+}
+
+function drawStageSelect() {
+  ctx.fillStyle = '#0b1530';
+  ctx.fillRect(0, 0, STAGE.w, STAGE.h);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 40px system-ui, sans-serif';
+  ctx.fillText('CHOOSE A STAGE', STAGE.w / 2, 80);
+  const sc = 0.4, cw = STAGE.w * sc, ch = STAGE.h * sc, gap = 60, x0 = (STAGE.w - STAGES.length * cw - (STAGES.length - 1) * gap) / 2;
+  STAGES.forEach((st, k) => {
+    const x = x0 + k * (cw + gap), y = 170;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, cw, ch); ctx.clip();
+    ctx.translate(x, y);
+    ctx.scale(sc, sc);
+    st.draw(ctx, null);
+    ctx.restore();
+    const on = k === game.stageIdx;
+    ctx.strokeStyle = on ? P_COLORS[0] : 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = on ? 5 : 2;
+    ctx.strokeRect(x - 3, y - 3, cw + 6, ch + 6);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = on ? '#ffffff' : '#9fb0c8';
+    ctx.font = 'bold 22px system-ui, sans-serif';
+    ctx.fillText(st.name, x + cw / 2, y + ch + 40);
+    ctx.font = '14px system-ui, sans-serif';
+    ctx.fillText(st.school ? `Home of ${st.school}` : 'No hazards', x + cw / 2, y + ch + 64);
+  });
+  ctx.fillStyle = '#c8d3e6';
+  ctx.font = '15px system-ui, sans-serif';
+  ctx.fillText('P1: A / D to pick, F to fight, G to go back', STAGE.w / 2, 650);
 }
 
 function drawPreview(e, i) {

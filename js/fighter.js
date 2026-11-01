@@ -24,7 +24,7 @@ class Fighter {
   spawn(x, y) {
     Object.assign(this, { x, y, vx: 0, vy: 0, damage: 0, onGround: false, onPlat: false, jumps: this.m.airJumps,
       move: null, hitstun: 0, drop: 0, fastFall: false, upUsed: false, sideUsed: false, dead: 0, invuln: 120,
-      hitActive: false });
+      hitActive: false, ammo: this.m.ammo });
   }
 
   get out() { return this.stocks <= 0 && this.dead > 0; }
@@ -183,8 +183,10 @@ class Fighter {
     const dir = d.away ? (Math.sign(this.x - src.x) || src.facing) : src.facing * (d.back ? -1 : 1);
     let kb;
     if (d.pull) {
+      // drag toward the user, slower when already close, so the foe stops near them
+      const dx = src.x - this.x;
       kb = d.pull;
-      this.vx = (Math.sign(src.x - this.x) || -dir) * d.pull;
+      this.vx = (Math.sign(dx) || -dir) * Math.min(d.pull, Math.abs(dx) / 14);
       this.vy = -3;
       this.hitstun = 22;
     } else if (d.stun) {
@@ -230,11 +232,23 @@ class Fighter {
       roundRect(ctx, b.x - 6, b.y - 6, b.w + 12, b.h + 12, 12);
       ctx.stroke();
     }
-    if (this.hitActive) {
+    if (this.hitActive && this.move.def.rope) {
+      const b = this.hitbox(), hand = this.x + this.facing * 16, tipX = this.facing > 0 ? b.x + b.w : b.x;
+      ctx.strokeStyle = '#d8b67a';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(hand, this.y - 40); ctx.lineTo(tipX - this.facing * 10, b.y + b.h / 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(tipX - this.facing * 2, b.y + b.h / 2, 12, 9, 0, 0, Math.PI * 2); ctx.stroke();
+    } else if (this.hitActive) {
       const b = this.hitbox();
       ctx.fillStyle = 'rgba(255,255,255,0.35)';
       roundRect(ctx, b.x, b.y, b.w, b.h, Math.min(b.w, b.h) / 2);
       ctx.fill();
+    }
+    if (this.ammo !== undefined) {
+      for (let k = 0; k < this.m.ammo; k++) {
+        ctx.fillStyle = k < this.ammo ? '#ffd27a' : 'rgba(255,255,255,0.2)';
+        ctx.fillRect(this.x - 17 + k * 6, this.y - this.h - 16, 4, 7);
+      }
     }
     // name tag
     ctx.fillStyle = this.idx === 0 ? '#ff5a5a' : '#5aa8ff';

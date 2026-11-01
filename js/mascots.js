@@ -14,6 +14,7 @@ const SHAPES = {
   tiger: { w: 54, h: 64 },
   longhorn: { w: 60, h: 68 },
   duck: { w: 44, h: 56 },
+  cowboy: { w: 48, h: 72 },
 };
 
 function baseMoves(h, power, speed) {
@@ -36,13 +37,14 @@ function fighterData(entry) {
   if (fighterCache[entry.id]) return fighterCache[entry.id];
   const W = WEIGHTS[entry.weight], S = SHAPES[entry.kind];
   const d = Object.assign({}, W, S, { id: entry.kind, name: entry.mascot, school: entry.school,
-    color: entry.color, trim: entry.trim, skin: entry.skin });
+    color: entry.color, trim: entry.trim, skin: entry.skin, ammo: entry.ammo });
   d.moves = Object.assign(baseMoves(d.h, W.power, W.speed), KITS[entry.id]);
   return (fighterCache[entry.id] = d);
 }
 
 // Draws a mascot standing at (0, 0) feet, facing right. Caller handles position and flip.
 function drawMascot(ctx, m, t, pose) {
+  if (m.id === 'cowboy') { drawCowboy(ctx, m, t, pose); return; }
   const w = m.w, h = m.h;
   const bob = pose === 'idle' ? Math.sin(t / 10) * 1.5 : 0;
   // legs
@@ -98,6 +100,55 @@ function drawMascot(ctx, m, t, pose) {
   ctx.beginPath(); ctx.arc(hx + hr * 0.35, hy - hr * 0.2, hr * 0.24, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#111111';
   ctx.beginPath(); ctx.arc(hx + hr * 0.42, hy - hr * 0.2, hr * 0.12, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// Pistol Pete: jeans, orange shirt, big head with a moustache, a wide black hat, a pistol on the hip.
+function drawCowboy(ctx, m, t, pose) {
+  const w = m.w, h = m.h;
+  const bob = pose === 'idle' ? Math.sin(t / 10) * 1.5 : 0;
+  const step = pose === 'run' ? Math.sin(t / 3) * 6 : 0;
+  ctx.fillStyle = '#2b3f66';
+  ctx.fillRect(-w * 0.3 + step, -h * 0.3, w * 0.22, h * 0.3);
+  ctx.fillRect(w * 0.08 - step, -h * 0.3, w * 0.22, h * 0.3);
+  ctx.fillStyle = '#5a3a1e';
+  ctx.fillRect(-w * 0.34 + step, -6, w * 0.3, 6);
+  ctx.fillRect(w * 0.04 - step, -6, w * 0.3, 6);
+  ctx.save();
+  ctx.translate(0, bob);
+  // shirt, vest and belt with holster
+  ctx.fillStyle = m.color;
+  roundRect(ctx, -w * 0.42, -h * 0.66, w * 0.84, h * 0.38, 8);
+  ctx.fill();
+  ctx.fillStyle = m.trim;
+  ctx.fillRect(-w * 0.42, -h * 0.66, w * 0.18, h * 0.38);
+  ctx.fillStyle = '#5a3a1e';
+  ctx.fillRect(-w * 0.42, -h * 0.32, w * 0.84, 5);
+  ctx.fillStyle = '#3a2a1a';
+  ctx.fillRect(w * 0.22, -h * 0.32, 9, 16);
+  ctx.fillStyle = '#9aa3ad';
+  ctx.fillRect(w * 0.22, -h * 0.32 - 3, 14, 4);
+  // bandana
+  ctx.fillStyle = '#c8102e';
+  ctx.beginPath(); ctx.moveTo(-w * 0.2, -h * 0.66); ctx.lineTo(w * 0.3, -h * 0.66); ctx.lineTo(w * 0.06, -h * 0.56); ctx.fill();
+  // head
+  const hx = w * 0.06, hy = -h * 0.8, hr = h * 0.17;
+  ctx.fillStyle = m.skin;
+  ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx + hr * 0.9, hy + hr * 0.1, hr * 0.32, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#3a2a1a';
+  ctx.beginPath(); ctx.ellipse(hx + hr * 0.6, hy + hr * 0.45, hr * 0.62, hr * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(hx + hr * 0.4, hy - hr * 0.15, hr * 0.22, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#111111';
+  ctx.beginPath(); ctx.arc(hx + hr * 0.48, hy - hr * 0.15, hr * 0.11, 0, Math.PI * 2); ctx.fill();
+  // hat
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath(); ctx.ellipse(hx, hy - hr * 0.75, hr * 1.9, hr * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+  roundRect(ctx, hx - hr * 0.85, hy - hr * 1.75, hr * 1.7, hr * 1.05, 6);
+  ctx.fill();
+  ctx.fillStyle = m.color;
+  ctx.fillRect(hx - hr * 0.85, hy - hr * 0.98, hr * 1.7, 3);
   ctx.restore();
 }
 

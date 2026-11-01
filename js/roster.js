@@ -31,7 +31,7 @@ const ROSTER = [
   { id: 'iowastate', conf: 'Big 12', school: 'Iowa State', team: 'Cyclones', mascot: 'Cy', weight: 'Light', color: '#c8102e', trim: '#f1be48' },
   { id: 'kansas', conf: 'Big 12', school: 'Kansas', team: 'Jayhawks', mascot: 'Big Jay', weight: 'Light', color: '#0051ba', trim: '#e8000d' },
   { id: 'kansasstate', conf: 'Big 12', school: 'Kansas State', team: 'Wildcats', mascot: 'Willie', weight: 'Medium', color: '#512888', trim: '#ffffff' },
-  { id: 'okstate', conf: 'Big 12', school: 'Oklahoma State', team: 'Cowboys', mascot: 'Pistol Pete', weight: 'Medium', color: '#ff7300', trim: '#1a1a1a' },
+  { id: 'okstate', conf: 'Big 12', school: 'Oklahoma State', team: 'Cowboys', mascot: 'Pistol Pete', weight: 'Medium', color: '#ff7300', trim: '#1a1a1a', kind: 'cowboy', skin: '#e0b48a', ammo: 6 },
   { id: 'tcu', conf: 'Big 12', school: 'TCU', team: 'Horned Frogs', mascot: 'SuperFrog', weight: 'Light', color: '#4d1979', trim: '#a3a9ac' },
   { id: 'texastech', conf: 'Big 12', school: 'Texas Tech', team: 'Red Raiders', mascot: 'Raider Red', weight: 'Medium', color: '#cc0000', trim: '#1a1a1a' },
   { id: 'ucf', conf: 'Big 12', school: 'UCF', team: 'Knights', mascot: 'Knightro', weight: 'Medium', color: '#1a1a1a', trim: '#ffc904' },

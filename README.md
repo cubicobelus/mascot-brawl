@@ -26,8 +26,14 @@ screen.
 
 ## Mascots
 
-The first wave is every SEC and Big 12 mascot. Playable so far: **Hairy Dawg** (Georgia), **Mike the Tiger** (LSU)
-and **Bevo** (Texas). The rest show as coming soon.
+The first wave is every SEC and Big 12 mascot. Playable so far: **Hairy Dawg** (Georgia), **Mike the Tiger** (LSU),
+**Bevo** (Texas) and **Pistol Pete** (Oklahoma State). The rest show as coming soon.
+
+## Stages
+
+- **Practice Field**: no hazards.
+- **Boone Pickens Stadium** (Oklahoma State): the Spirit Rider gallops across the field after a KO, the O-S-U
+  chant bumps anyone on the floating platforms, and a prairie wind sometimes pushes everyone sideways.
 
 ## License
 
