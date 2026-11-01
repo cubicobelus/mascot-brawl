@@ -6,7 +6,10 @@ no dependencies.
 
 ## Play
 
-Download the repo and open `index.html` in a browser.
+**[Play in your browser](https://cubicobelus.github.io/mascot-brawl/)**: nothing to download or install. Needs a
+keyboard.
+
+To run it offline, download the repo and open `index.html` in a browser.
 
 ## Controls
 
