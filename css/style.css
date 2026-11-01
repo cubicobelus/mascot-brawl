@@ -1,0 +1,4 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1220; }
+body { display: flex; align-items: center; justify-content: center; }
+#game { display: block; width: min(100vw, calc(100vh * 16 / 9)); height: auto; aspect-ratio: 16 / 9; background: #0b1220; }
