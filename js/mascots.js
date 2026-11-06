@@ -27,6 +27,10 @@ const SHAPES = {
   devil: { w: 48, h: 66 },
   bear: { w: 60, h: 66 },
   bison: { w: 68, h: 68 },
+  frontier: { w: 52, h: 68 },
+  knight: { w: 50, h: 68 },
+  frog: { w: 50, h: 56 },
+  hawk: { w: 46, h: 62 },
 };
 
 function baseMoves(h, power, speed) {
@@ -208,6 +212,45 @@ function drawMascot(ctx, m, t, pose) {
     ctx.beginPath(); ctx.moveTo(hx + hr * 0.5, hy - hr * 0.7); ctx.quadraticCurveTo(hx + hr * 1.5, hy - hr * 0.8, hx + hr * 1.3, hy - hr * 1.5); ctx.stroke();
     ctx.fillStyle = '#2a1e16';
     ctx.beginPath(); ctx.ellipse(hx + hr * 0.7, hy + hr * 0.45, hr * 0.45, hr * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  if (m.id === 'frontier') {
+    ctx.fillStyle = '#6b4a2a';
+    ctx.beginPath(); ctx.arc(hx, hy - hr * 0.5, hr * 1.05, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#3a2a1a';
+    for (let k = 0; k < 3; k++) ctx.fillRect(hx - hr * 1.5 - k * 5, hy - hr * 0.3 + k * 2, 5, 5);
+    ctx.fillStyle = '#7a4a1a';
+    ctx.fillRect(hx - hr * 1.0, hy - hr * 0.55, hr * 2.0, 4);
+    ctx.fillStyle = '#5a3a1e';
+    ctx.fillRect(-w * 0.1, -h * 0.62, w * 0.9, 4);
+  }
+  if (m.id === 'knight') {
+    ctx.fillStyle = '#9aa3ad';
+    ctx.beginPath(); ctx.arc(hx, hy, hr * 1.1, Math.PI, 0); ctx.fill();
+    ctx.fillRect(hx - hr * 1.1, hy, hr * 2.2, hr * 0.4);
+    ctx.fillStyle = '#2a2f36';
+    ctx.fillRect(hx + hr * 0.1, hy - hr * 0.3, hr * 1.0, hr * 0.28);
+    ctx.fillStyle = m.trim;
+    ctx.beginPath(); ctx.moveTo(hx - hr * 0.3, hy - hr * 1.1); ctx.lineTo(hx - hr * 1.2, hy - hr * 1.8); ctx.lineTo(hx + hr * 0.2, hy - hr * 1.2); ctx.fill();
+    ctx.fillStyle = '#9aa3ad';
+    roundRect(ctx, w * 0.18, -h * 0.66, 12, h * 0.3, 4); ctx.fill();
+  }
+  if (m.id === 'frog') {
+    ctx.fillStyle = m.skin;
+    for (const s of [0.1, 0.8]) { ctx.beginPath(); ctx.arc(hx + hr * s, hy - hr * 0.95, hr * 0.42, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = '#ffffff';
+    for (const s of [0.1, 0.8]) { ctx.beginPath(); ctx.arc(hx + hr * s, hy - hr * 0.95, hr * 0.26, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = '#111111';
+    for (const s of [0.1, 0.8]) { ctx.beginPath(); ctx.arc(hx + hr * (s + 0.08), hy - hr * 0.95, hr * 0.12, 0, Math.PI * 2); ctx.fill(); }
+    ctx.strokeStyle = '#2f6b2a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(hx + hr * 0.3, hy + hr * 0.25, hr * 0.7, 0.1, Math.PI - 0.1); ctx.stroke();
+  }
+  if (m.id === 'hawk') {
+    ctx.fillStyle = '#6a1717';
+    ctx.beginPath(); ctx.moveTo(hx - hr * 0.6, hy - hr * 0.8); ctx.lineTo(hx - hr * 1.3, hy - hr * 1.5); ctx.lineTo(hx + hr * 0.1, hy - hr * 0.95); ctx.fill();
+    ctx.fillStyle = '#f0b81c';
+    ctx.beginPath(); ctx.moveTo(hx + hr * 0.7, hy - 3); ctx.lineTo(hx + hr * 1.6, hy + 2); ctx.lineTo(hx + hr * 1.2, hy + hr * 0.5); ctx.lineTo(hx + hr * 0.7, hy + 6); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(hx - hr * 0.2, hy + hr * 0.1, hr * 0.8, 3);
   }
   // eye
   ctx.fillStyle = '#ffffff';
