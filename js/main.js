@@ -296,9 +296,16 @@ function drawProjectile(p) {
       drawMascot(ctx, p.owner.m, game.t + k * 7, 'run');
       ctx.restore();
     }
+  } else if (p.look === 'bird') {
+    ctx.fillStyle = p.color || '#ffe28a';
+    const flap = Math.sin(game.t / 2) * p.h * 0.3;
+    ctx.beginPath(); ctx.moveTo(p.x + p.facing * p.w * 0.5, p.y); ctx.lineTo(p.x - p.facing * p.w * 0.4, p.y - p.h * 0.5 - flap);
+    ctx.lineTo(p.x - p.facing * p.w * 0.2, p.y); ctx.lineTo(p.x - p.facing * p.w * 0.4, p.y + p.h * 0.5 + flap); ctx.fill();
+  } else if (p.look === 'none') {
+    // invisible burst
   } else {
-    ctx.fillStyle = '#ffe28a';
-    ctx.beginPath(); ctx.arc(p.x, p.y, Math.min(p.w, p.h) / 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = p.color || '#ffe28a';
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, p.w / 2, p.h / 2, 0, 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalAlpha = 1;
 }
