@@ -23,6 +23,10 @@ const SHAPES = {
   shark: { w: 56, h: 62 },
   horse: { w: 62, h: 70 },
   hound: { w: 54, h: 56 },
+  captain: { w: 50, h: 68 },
+  devil: { w: 48, h: 66 },
+  bear: { w: 60, h: 66 },
+  bison: { w: 68, h: 68 },
 };
 
 function baseMoves(h, power, speed) {
@@ -166,6 +170,44 @@ function drawMascot(ctx, m, t, pose) {
     ctx.beginPath(); ctx.ellipse(hx + hr * 0.6, hy + hr * 0.4, hr * 0.65, hr * 0.45, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#111111';
     ctx.beginPath(); ctx.arc(hx + hr * 1.1, hy + hr * 0.25, hr * 0.17, 0, Math.PI * 2); ctx.fill();
+  }
+  if (m.id === 'captain') {
+    ctx.fillStyle = '#e8dcc8';
+    ctx.beginPath(); ctx.ellipse(hx + hr * 0.6, hy + hr * 0.5, hr * 0.6, hr * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath(); ctx.moveTo(hx - hr * 1.5, hy - hr * 0.5); ctx.lineTo(hx, hy - hr * 1.7); ctx.lineTo(hx + hr * 1.5, hy - hr * 0.5); ctx.lineTo(hx, hy - hr * 0.8); ctx.fill();
+    ctx.fillStyle = m.trim;
+    ctx.fillRect(hx - hr * 1.3, hy - hr * 0.62, hr * 2.6, 3);
+    ctx.fillRect(w * 0.2, -h * 0.7, 6, h * 0.2);
+  }
+  if (m.id === 'devil') {
+    ctx.fillStyle = '#7a1010';
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(hx + s * hr * 0.4, hy - hr * 0.8); ctx.lineTo(hx + s * hr * 0.9, hy - hr * 1.7); ctx.lineTo(hx + s * hr * 1.0, hy - hr * 0.6); ctx.fill(); }
+    ctx.fillStyle = '#3a1a1a';
+    ctx.beginPath(); ctx.moveTo(hx + hr * 0.4, hy + hr * 0.6); ctx.lineTo(hx + hr * 0.7, hy + hr * 1.4); ctx.lineTo(hx + hr * 1.0, hy + hr * 0.6); ctx.fill();
+    ctx.strokeStyle = '#9aa3ad'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(w * 0.5, -h * 0.2); ctx.lineTo(w * 0.5, -h * 0.9);
+    ctx.moveTo(w * 0.38, -h * 0.9); ctx.lineTo(w * 0.62, -h * 0.9);
+    ctx.moveTo(w * 0.38, -h * 0.9); ctx.lineTo(w * 0.38, -h * 0.98);
+    ctx.moveTo(w * 0.62, -h * 0.9); ctx.lineTo(w * 0.62, -h * 0.98); ctx.stroke();
+  }
+  if (m.id === 'bear') {
+    ctx.fillStyle = m.skin;
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(hx + s * hr * 0.8, hy - hr * 0.8, hr * 0.38, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = '#c9a27a';
+    ctx.beginPath(); ctx.ellipse(hx + hr * 0.55, hy + hr * 0.35, hr * 0.55, hr * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#111111';
+    ctx.beginPath(); ctx.arc(hx + hr * 0.95, hy + hr * 0.2, hr * 0.15, 0, Math.PI * 2); ctx.fill();
+  }
+  if (m.id === 'bison') {
+    ctx.fillStyle = '#3a2c20';
+    ctx.beginPath(); ctx.ellipse(hx - hr * 0.3, hy + hr * 0.1, hr * 1.35, hr * 1.25, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = m.skin;
+    ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#e8dcc8'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(hx + hr * 0.5, hy - hr * 0.7); ctx.quadraticCurveTo(hx + hr * 1.5, hy - hr * 0.8, hx + hr * 1.3, hy - hr * 1.5); ctx.stroke();
+    ctx.fillStyle = '#2a1e16';
+    ctx.beginPath(); ctx.ellipse(hx + hr * 0.7, hy + hr * 0.45, hr * 0.45, hr * 0.35, 0, 0, Math.PI * 2); ctx.fill();
   }
   // eye
   ctx.fillStyle = '#ffffff';
