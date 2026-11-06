@@ -20,6 +20,9 @@ const SHAPES = {
   gator: { w: 62, h: 62 },
   cat: { w: 46, h: 58 },
   rooster: { w: 44, h: 60 },
+  shark: { w: 56, h: 62 },
+  horse: { w: 62, h: 70 },
+  hound: { w: 54, h: 56 },
 };
 
 function baseMoves(h, power, speed) {
@@ -138,6 +141,31 @@ function drawMascot(ctx, m, t, pose) {
     ctx.beginPath(); ctx.moveTo(hx + hr * 0.7, hy - 2); ctx.lineTo(hx + hr * 1.6, hy + 3); ctx.lineTo(hx + hr * 0.7, hy + 8); ctx.fill();
     ctx.fillStyle = '#e02a2a';
     ctx.beginPath(); ctx.ellipse(hx + hr * 0.8, hy + hr * 0.75, hr * 0.2, hr * 0.32, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  if (m.id === 'shark') {
+    ctx.fillStyle = '#6a7a90';
+    ctx.beginPath(); ctx.moveTo(-w * 0.2, -h * 0.72); ctx.lineTo(-w * 0.05, -h * 1.0); ctx.lineTo(w * 0.1, -h * 0.72); ctx.fill();
+    ctx.fillStyle = '#e8eef5';
+    ctx.beginPath(); ctx.ellipse(hx + hr * 0.4, hy + hr * 0.5, hr * 0.8, hr * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(hx + hr * (0.0 + k * 0.4), hy + hr * 0.35); ctx.lineTo(hx + hr * (0.1 + k * 0.4), hy + hr * 0.65); ctx.lineTo(hx + hr * (0.2 + k * 0.4), hy + hr * 0.35); ctx.fill(); }
+  }
+  if (m.id === 'horse') {
+    ctx.fillStyle = '#4a3322';
+    ctx.beginPath(); ctx.moveTo(hx - hr * 0.5, hy - hr * 0.9); ctx.lineTo(hx - hr * 1.3, hy + hr * 0.8); ctx.lineTo(hx - hr * 0.2, hy + hr * 0.4); ctx.fill();
+    for (const s of [-0.1, 0.5]) { ctx.beginPath(); ctx.moveTo(hx + hr * s, hy - hr * 0.8); ctx.lineTo(hx + hr * (s + 0.2), hy - hr * 1.5); ctx.lineTo(hx + hr * (s + 0.5), hy - hr * 0.7); ctx.fill(); }
+    ctx.fillStyle = m.skin;
+    ctx.beginPath(); ctx.ellipse(hx + hr * 0.8, hy + hr * 0.45, hr * 0.8, hr * 0.5, 0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fdf9d8';
+    ctx.fillRect(hx + hr * 0.1, hy - hr * 0.9, hr * 0.3, hr * 1.3);
+  }
+  if (m.id === 'hound') {
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(hx + s * hr * 0.9, hy + hr * 0.3, hr * 0.38, hr * 0.8, s * 0.2, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = '#e8dcc8';
+    ctx.beginPath(); ctx.ellipse(hx + hr * 0.6, hy + hr * 0.4, hr * 0.65, hr * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#111111';
+    ctx.beginPath(); ctx.arc(hx + hr * 1.1, hy + hr * 0.25, hr * 0.17, 0, Math.PI * 2); ctx.fill();
   }
   // eye
   ctx.fillStyle = '#ffffff';
