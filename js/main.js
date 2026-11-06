@@ -415,7 +415,7 @@ function drawHud() {
     ctx.font = 'bold 34px system-ui, sans-serif';
     ctx.fillText(`${Math.floor(f.damage)}%`, x - 55, y + 58);
     for (let k = 0; k < STOCKS; k++) {
-      ctx.fillStyle = k < f.stocks ? f.m.color : 'rgba(255,255,255,0.15)';
+      ctx.fillStyle = k < f.stocks ? (lum(f.m.color) < 0.15 ? f.m.trim : f.m.color) : 'rgba(255,255,255,0.15)';
       ctx.beginPath(); ctx.arc(x + 70 + k * 22, y + 44, 8, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
     }
@@ -603,8 +603,10 @@ function drawPreview(e, i) {
   }
   const d = fighterData(e);
   ctx.save();
+  // four-legged fighters are wide, so they get a smaller preview to stay clear of the move list
+  const ps = ART[d.id].body === 'beast' ? 1.1 : 1.4;
   ctx.translate(x + 64, y + 150);
-  ctx.scale(1.4, 1.4);
+  ctx.scale(ps, ps);
   drawMascot(ctx, d, game.t, 'idle');
   ctx.restore();
   const rows = [['Neutral', 'neutralB'], ['Side', 'sideB'], ['Up', 'upB'], ['Down', 'downB'], ['Heisman', 'super']];
