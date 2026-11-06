@@ -62,6 +62,7 @@ function fighterData(entry) {
 
 // Draws a mascot standing at (0, 0) feet, facing right. Caller handles position and flip.
 function drawMascot(ctx, m, t, pose) {
+  if (ART[m.id]) { drawArt(ctx, m, t, pose); return; }
   if (m.id === 'cowboy') { drawCowboy(ctx, m, t, pose); return; }
   const w = m.w, h = m.h;
   const bob = pose === 'idle' ? Math.sin(t / 10) * 1.5 : 0;

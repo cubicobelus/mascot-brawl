@@ -221,7 +221,11 @@ class Fighter {
     ctx.translate(this.x, this.y);
     ctx.scale(this.facing, 1);
     if (this.hitstun > 0) ctx.rotate(Math.sin(this.t * 0.8) * 0.15);
-    const pose = this.onGround && Math.abs(this.vx) > 1 && !this.move ? 'run' : 'idle';
+    let pose = 'idle';
+    if (this.hitstun > 0) pose = 'hurt';
+    else if (this.move) pose = /B$|^super$|^reload$/.test(this.move.name) ? 'special' : 'attack';
+    else if (!this.onGround) pose = 'air';
+    else if (Math.abs(this.vx) > 1) pose = 'run';
     drawMascot(ctx, this.m, this.t, pose);
     ctx.restore();
     ctx.globalAlpha = 1;
