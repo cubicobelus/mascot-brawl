@@ -31,6 +31,8 @@ const SHAPES = {
   knight: { w: 50, h: 68 },
   frog: { w: 50, h: 56 },
   hawk: { w: 46, h: 62 },
+  cardinal: { w: 44, h: 58 },
+  jayhawk: { w: 46, h: 60 },
 };
 
 function baseMoves(h, power, speed) {
@@ -251,6 +253,22 @@ function drawMascot(ctx, m, t, pose) {
     ctx.beginPath(); ctx.moveTo(hx + hr * 0.7, hy - 3); ctx.lineTo(hx + hr * 1.6, hy + 2); ctx.lineTo(hx + hr * 1.2, hy + hr * 0.5); ctx.lineTo(hx + hr * 0.7, hy + 6); ctx.fill();
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(hx - hr * 0.2, hy + hr * 0.1, hr * 0.8, 3);
+  }
+  if (m.id === 'cardinal') {
+    ctx.fillStyle = m.skin;
+    ctx.beginPath(); ctx.moveTo(hx - hr * 0.6, hy - hr * 0.7); ctx.lineTo(hx - hr * 0.9, hy - hr * 1.9); ctx.lineTo(hx + hr * 0.3, hy - hr * 0.9); ctx.fill();
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(hx + hr * 0.1, hy - hr * 0.5, hr * 0.9, hr * 0.7);
+    ctx.fillStyle = '#f08a1c';
+    ctx.beginPath(); ctx.moveTo(hx + hr * 0.7, hy - 2); ctx.lineTo(hx + hr * 1.6, hy + 3); ctx.lineTo(hx + hr * 0.7, hy + 8); ctx.fill();
+  }
+  if (m.id === 'jayhawk') {
+    ctx.fillStyle = '#e8000d';
+    ctx.beginPath(); ctx.moveTo(hx - hr * 0.5, hy - hr * 0.8); ctx.lineTo(hx - hr * 0.7, hy - hr * 1.7); ctx.lineTo(hx + hr * 0.4, hy - hr * 0.9); ctx.fill();
+    ctx.fillStyle = '#f5d040';
+    ctx.beginPath(); ctx.moveTo(hx + hr * 0.6, hy - hr * 0.3); ctx.lineTo(hx + hr * 1.9, hy + hr * 0.1); ctx.lineTo(hx + hr * 0.6, hy + hr * 0.8); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(hx - hr * 0.8, hy + hr * 0.5, hr * 0.8, 4);
   }
   // eye
   ctx.fillStyle = '#ffffff';
