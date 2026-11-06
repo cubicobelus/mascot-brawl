@@ -378,6 +378,7 @@ function drawBanner(b) {
 }
 
 function drawHud() {
+  drawControlsBox();
   game.fighters.forEach((f, i) => {
     const x = 420 + i * 440, y = 620;
     ctx.fillStyle = 'rgba(10,16,28,0.8)';
@@ -417,6 +418,25 @@ function drawHud() {
       ctx.fillStyle = '#ffe28a';
       ctx.fillText('HEISMAN READY', x + 40, y + 63);
     }
+  });
+}
+
+// Small controls reminder in the top left corner. The second player's line is left out against the CPU.
+function drawControlsBox() {
+  const rows = [['P1', 'WASD move/jump, F attack, G special']];
+  if (!game.fighters[1].isCpu) rows.push(['P2', 'Arrows, K attack, L special']);
+  rows.push(['', 'Attack + special = Heisman. P pause']);
+  ctx.font = '12px system-ui, sans-serif';
+  const w = Math.max(...rows.map(r => ctx.measureText(r[0] + '  ' + r[1]).width)) + 20, h = rows.length * 17 + 12;
+  ctx.fillStyle = 'rgba(10,16,28,0.7)';
+  roundRect(ctx, 12, 12, w, h, 8);
+  ctx.fill();
+  ctx.textAlign = 'left';
+  rows.forEach((r, i) => {
+    ctx.fillStyle = r[0] === 'P1' ? '#ff8a8a' : r[0] === 'P2' ? '#8ac0ff' : 'rgba(255,255,255,0.55)';
+    ctx.fillText(r[0], 22, 31 + i * 17);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText(r[1], 22 + (r[0] ? 26 : 0), 31 + i * 17);
   });
 }
 
