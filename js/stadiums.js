@@ -34,19 +34,19 @@ function stadiumBack(ctx, o, hz) {
   ctx.restore();
   const b = o.board;
   ctx.fillStyle = '#111';
-  ctx.fillRect(520, 140, 240, 100);
+  ctx.fillRect(520, 40, 240, 100);
   ctx.strokeStyle = b.color;
   ctx.lineWidth = 4;
-  ctx.strokeRect(520, 140, 240, 100);
+  ctx.strokeRect(520, 40, 240, 100);
   ctx.textAlign = 'center';
   ctx.fillStyle = b.color;
   ctx.font = 'bold 22px system-ui, sans-serif';
-  ctx.fillText(b.title, 640, 174, 220);
+  ctx.fillText(b.title, 640, 74, 220);
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 14px system-ui, sans-serif';
-  ctx.fillText(b.name, 640, 204, 224);
+  ctx.fillText(b.name, 640, 104, 224);
   ctx.font = '12px system-ui, sans-serif';
-  ctx.fillText(b.city, 640, 224, 220);
+  ctx.fillText(b.city, 640, 124, 220);
   drawLights(ctx, o.lights || '#fff6d8');
 }
 
