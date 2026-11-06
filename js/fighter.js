@@ -24,7 +24,7 @@ class Fighter {
   spawn(x, y) {
     Object.assign(this, { x, y, vx: 0, vy: 0, damage: 0, onGround: false, onPlat: false, jumps: this.m.airJumps,
       move: null, hitstun: 0, drop: 0, fastFall: false, upUsed: false, sideUsed: false, dead: 0, invuln: 120,
-      hitActive: false, ammo: this.m.ammo });
+      hitActive: false, ammo: this.m.ammo, squash: 0 });
   }
 
   get out() { return this.stocks <= 0 && this.dead > 0; }
@@ -68,6 +68,11 @@ class Fighter {
 
     this.physics();
     if (this.onGround && !this.move) this.upUsed = this.sideUsed = false;
+    // dust kicked up when running or dashing along the ground
+    const sp = Math.abs(this.vx);
+    if (this.onGround && ((sp > 3 && !this.move && this.t % 9 === 0) || (sp > 8 && this.t % 3 === 0)))
+      this.events.push({ type: 'dust', x: this.x - this.facing * 10, y: this.y, n: sp > 8 ? 3 : 2, dir: -this.facing, power: sp > 8 ? 1.4 : 0.8 });
+    this.squash *= 0.8;
   }
 
   control(c) {
@@ -79,8 +84,8 @@ class Fighter {
     this.vx += Math.max(-accel, Math.min(accel, target - this.vx));
 
     if (c.upP) {
-      if (this.onGround) { this.vy = -m.jump; this.onGround = false; }
-      else if (this.jumps > 0) { this.jumps--; this.vy = -m.jump * 0.9; this.fastFall = false; }
+      if (this.onGround) { this.vy = -m.jump; this.onGround = false; this.events.push({ type: 'dust', x: this.x, y: this.y, n: 6 }); }
+      else if (this.jumps > 0) { this.jumps--; this.vy = -m.jump * 0.9; this.fastFall = false; this.events.push({ type: 'ring', x: this.x, y: this.y }); }
     }
     if (this.trySuper(c)) return;
     if (c.attackP) {
@@ -155,6 +160,10 @@ class Fighter {
   }
 
   land(y, plat) {
+    if (this.vy > 4) {
+      this.events.push({ type: 'dust', x: this.x, y, n: Math.min(12, Math.round(this.vy)), power: 1.2 });
+      this.squash = Math.min(1, this.vy / 14);
+    }
     this.y = y;
     this.vy = 0;
     this.onGround = true;
@@ -219,11 +228,12 @@ class Fighter {
     if (this.invuln > 0 && Math.floor(this.invuln / 4) % 2 === 0) ctx.globalAlpha = 0.45;
     ctx.save();
     ctx.translate(this.x, this.y);
-    ctx.scale(this.facing, 1);
+    // a landing squashes the fighter a little, then it springs back
+    ctx.scale(this.facing * (1 + this.squash * 0.25), 1 - this.squash * 0.22);
     if (this.hitstun > 0) ctx.rotate(Math.sin(this.t * 0.8) * 0.15);
     let pose = 'idle';
     if (this.hitstun > 0) pose = 'hurt';
-    else if (this.move) pose = /B$|^super$|^reload$/.test(this.move.name) ? 'special' : 'attack';
+    else if (this.move) pose = movePose(this.move);
     else if (!this.onGround) pose = 'air';
     else if (Math.abs(this.vx) > 1) pose = 'run';
     drawMascot(ctx, this.m, this.t, pose);

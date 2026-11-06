@@ -64,7 +64,7 @@ const KITS = {
   },
   alabama: {
     neutralB: { name: 'Trunk Spray', startup: 10, active: 1, recovery: 16,
-      projectile: { at: 10, dx: 44, dy: -44, vx: 9, vy: 0, w: 34, h: 22, life: 26, look: 'blob', color: '#7fc4ff', dmg: 2, base: 7, scale: 0.02, angle: 8 } },
+      projectile: { at: 10, dx: 44, dy: -44, vx: 9, vy: 0, w: 34, h: 22, life: 26, look: 'water', dmg: 2, base: 7, scale: 0.02, angle: 8 } },
     sideB: { name: 'Elephant Stampede', startup: 16, active: 34, recovery: 20, noDrift: true, keepMomentum: true, gravity: 0.5, armor: [6, 50],
       box: { dx: 38, dy: -40, w: 58, h: 60 }, dmg: 13, base: 8, scale: 0.12, angle: 40,
       onFrame(f, me) { if (f < 16) me.vx *= 0.8; else if (f < 50) me.vx = 6.5 * me.facing; } },
@@ -104,7 +104,7 @@ const KITS = {
       box: { dx: 14, dy: -60, w: 56, h: 52 }, dmg: 7, base: 6, scale: 0.08, angle: 75,
       onFrame(f, me) { if (f === 6) { me.vx = 6 * me.facing; me.vy = -14.5; } } },
     downB: { name: "Toomer's Roll", startup: 12, active: 1, recovery: 20,
-      projectile: { at: 12, dx: 40, dy: -20, vx: 6, vy: -3, gravity: 0.35, w: 64, h: 44, life: 36, look: 'blob', color: '#f5f5f5', dmg: 2, stun: 50 } },
+      projectile: { at: 12, dx: 40, dy: -20, vx: 6, vy: -3, gravity: 0.35, w: 64, h: 44, life: 36, look: 'tp', dmg: 2, stun: 50 } },
     super: { name: "Toomer's Corner", banner: "Toomer's Corner", startup: 12, active: 1, recovery: 22,
       projectile: { at: 12, dx: 10, dy: -50, vx: 10, vy: 0, w: 130, h: 90, life: 110, look: 'bird', color: '#e87722', pierce: true,
         dmg: 22, base: 11, scale: 0.17, angle: 40 } },
@@ -170,7 +170,7 @@ const KITS = {
       box: { dx: 12, dy: -70, w: 54, h: 50 }, dmg: 9, base: 6, scale: 0.09, angle: 80,
       onFrame(f, me) { if (f === 6) { me.vx = 4 * me.facing; me.vy = -15; } } },
     downB: { name: 'The Grove Tent', startup: 14, active: 1, recovery: 20,
-      projectile: { at: 14, dx: 60, dy: -34, vx: 0, vy: 0, w: 96, h: 68, life: 90, look: 'blob', color: '#f4f4f4', dmg: 6, base: 6, scale: 0.08, angle: 70 } },
+      projectile: { at: 14, dx: 60, dy: -34, vx: 0, vy: 0, w: 96, h: 68, life: 90, look: 'tent', dmg: 6, base: 6, scale: 0.08, angle: 70 } },
     super: { name: 'Hotty Toddy', banner: 'Hotty Toddy', startup: 16, active: 44, recovery: 18, noDrift: true, keepMomentum: true, gravity: 0.3, armor: [0, 60],
       box: { dx: 34, dy: -40, w: 74, h: 64 }, dmg: 24, base: 11, scale: 0.16, angle: 45,
       onFrame(f, me) { if (f < 16) me.vx *= 0.7; else if (f < 60) me.vx = 14 * me.facing; } },
@@ -185,7 +185,7 @@ const KITS = {
       box: { dx: 10, dy: -76, w: 60, h: 46 }, dmg: 8, base: 6, scale: 0.09, angle: 82,
       onFrame(f, me) { if (f === 7) { me.vx = 4 * me.facing; me.vy = -14.5; } } },
     downB: { name: 'Cowbell Drop', startup: 14, active: 1, recovery: 18,
-      projectile: { at: 14, dx: 90, dy: -240, vx: 0, vy: 9, w: 44, h: 46, life: 36, look: 'blob', color: '#e0c050', dmg: 11, base: 8, scale: 0.12, angle: 72 } },
+      projectile: { at: 14, dx: 90, dy: -240, vx: 0, vy: 9, w: 44, h: 46, life: 36, look: 'cowbell', dmg: 11, base: 8, scale: 0.12, angle: 72 } },
     super: { name: 'Hail State', banner: 'Hail State', startup: 12, active: 1, recovery: 22,
       projectile: { at: 12, dx: -60, dy: -34, vx: 12, vy: 0, w: 160, h: 70, life: 120, look: 'herd', pierce: true,
         dmg: 22, base: 11, scale: 0.16, angle: 40 } },
@@ -194,7 +194,7 @@ const KITS = {
     neutralB: { name: 'Tiger Paw Slam', startup: 12, active: 4, recovery: 20,
       box: { dx: 34, dy: -50, w: 56, h: 62 }, dmg: 11, base: 7, scale: 0.12, angle: 55 },
     sideB: { name: 'Homecoming Parade', startup: 14, active: 1, recovery: 20,
-      projectile: { at: 14, dx: 60, dy: -30, vx: 4, vy: 0, w: 120, h: 60, life: 80, look: 'blob', color: '#d9c06a', dmg: 10, base: 7, scale: 0.1, angle: 40 } },
+      projectile: { at: 14, dx: 60, dy: -30, vx: 4, vy: 0, w: 120, h: 60, life: 80, look: 'float', dmg: 10, base: 7, scale: 0.1, angle: 40 } },
     upB: { name: 'Columns Climb', startup: 6, active: 16, recovery: 16, noDrift: true,
       box: { dx: 12, dy: -66, w: 54, h: 50 }, dmg: 7, base: 6, scale: 0.08, angle: 80,
       onFrame(f, me) { if (f === 6) { me.vx = 3 * me.facing; me.vy = -14.5; } } },
@@ -242,7 +242,7 @@ const KITS = {
   },
   texasam: {
     neutralB: { name: 'Fetch', startup: 8, active: 1, recovery: 16,
-      projectile: { at: 8, dx: 30, dy: -44, vx: 8, vy: -5, gravity: 0.3, w: 20, h: 20, life: 50, look: 'blob', color: '#f4f4f4', dmg: 5, base: 5, scale: 0.07, angle: 40 } },
+      projectile: { at: 8, dx: 30, dy: -44, vx: 8, vy: -5, gravity: 0.3, w: 20, h: 20, life: 50, look: 'ball', dmg: 5, base: 5, scale: 0.07, angle: 40 } },
     sideB: { name: '12th Man Rush', startup: 12, active: 1, recovery: 20,
       projectile: { at: 12, dx: -20, dy: -30, vx: 11, vy: 0, w: 100, h: 60, life: 70, look: 'herd', dmg: 9, base: 7, scale: 0.1, angle: 40 } },
     upB: { name: 'Yell Leader Toss', startup: 6, active: 16, recovery: 16, noDrift: true,
@@ -259,7 +259,7 @@ const KITS = {
     neutralB: { name: 'Saber Thrust', startup: 7, active: 4, recovery: 14,
       box: { dx: 56, dy: -40, w: 76, h: 24 }, dmg: 8, base: 6, scale: 0.1, angle: 30 },
     sideB: { name: 'Naval Cannon', startup: 20, active: 1, recovery: 22,
-      projectile: { at: 20, dx: 40, dy: -42, vx: 8, vy: 0, w: 28, h: 28, life: 70, look: 'blob', color: '#3a3a3a', dmg: 13, base: 8, scale: 0.13, angle: 30 } },
+      projectile: { at: 20, dx: 40, dy: -42, vx: 8, vy: 0, w: 28, h: 28, life: 70, look: 'cannonball', dmg: 13, base: 8, scale: 0.13, angle: 30 } },
     upB: { name: 'Anchor Swing Up', startup: 6, active: 16, recovery: 16, noDrift: true,
       box: { dx: 12, dy: -76, w: 56, h: 50 }, dmg: 7, base: 6, scale: 0.08, angle: 80,
       onFrame(f, me) { if (f === 6) { me.vx = 3 * me.facing; me.vy = -14.5; } } },
@@ -293,7 +293,7 @@ const KITS = {
       onFrame(f, me) {
         if (f < 8) me.vx *= 0.8; else if (f < 24) me.vx = 12 * me.facing;
         if (f >= 8 && f < 24 && f % 4 === 0) me.events.push({ type: 'projectile', p: { dx: -10, dy: -10, vx: 0, vy: 0, w: 30, h: 24,
-          life: 50, look: 'blob', color: '#ff7a1a', dmg: 3, base: 4, scale: 0.04, angle: 70 } });
+          life: 50, look: 'fire', dmg: 3, base: 4, scale: 0.04, angle: 70 } });
       } },
     upB: { name: 'Fire Jump', startup: 6, active: 16, recovery: 16, noDrift: true,
       box: { dx: 10, dy: -62, w: 54, h: 50 }, dmg: 7, base: 6, scale: 0.08, angle: 80,
@@ -301,7 +301,7 @@ const KITS = {
     downB: { name: 'Sun Devil Flare', startup: 16, active: 6, recovery: 20,
       box: { dx: 0, dy: -34, w: 180, h: 160 }, dmg: 8, base: 8, scale: 0.09, angle: 60, away: true },
     super: { name: 'Inferno', banner: 'Inferno', startup: 14, active: 1, recovery: 22,
-      projectile: { at: 14, dx: 10, dy: -50, vx: 8, vy: 0, w: 210, h: 130, life: 100, look: 'blob', color: '#ff7a1a', pierce: true,
+      projectile: { at: 14, dx: 10, dy: -50, vx: 8, vy: 0, w: 210, h: 130, life: 100, look: 'inferno', pierce: true,
         dmg: 22, base: 11, scale: 0.17, angle: 50 } },
   },
   baylor: {
@@ -358,7 +358,7 @@ const KITS = {
   },
   westvirginia: {
     neutralB: { name: 'Musket Shot', startup: 18, active: 1, recovery: 24,
-      projectile: { at: 18, dx: 40, dy: -42, vx: 9, vy: 0, w: 30, h: 18, life: 60, look: 'blob', color: '#444444', dmg: 14, base: 9, scale: 0.14, angle: 25 } },
+      projectile: { at: 18, dx: 40, dy: -42, vx: 9, vy: 0, w: 30, h: 18, life: 60, look: 'musketball', dmg: 14, base: 9, scale: 0.14, angle: 25 } },
     sideB: { name: 'Coonskin Charge', startup: 12, active: 22, recovery: 18, noDrift: true, keepMomentum: true, gravity: 0.4,
       box: { dx: 36, dy: -36, w: 56, h: 56 }, dmg: 12, base: 7, scale: 0.11, angle: 38,
       onFrame(f, me) { if (f < 12) me.vx *= 0.8; else if (f < 34) me.vx = 10 * me.facing; } },
@@ -386,7 +386,7 @@ const KITS = {
     downB: { name: 'Tortilla Toss', startup: 10, active: 1, recovery: 24,
       onFrame(f, me) {
         if (f === 10) for (const dx of [40, 90, 140]) me.events.push({ type: 'projectile', p: { dx, dy: -260 - dx * 0.3, vx: 0, vy: 7, w: 38, h: 14, life: 60,
-          look: 'blob', color: '#e8d8a0', dmg: 4, base: 5, scale: 0.06, angle: 70 } });
+          look: 'tortilla', dmg: 4, base: 5, scale: 0.06, angle: 70 } });
       } },
     super: { name: 'Red Raider Rampage', banner: 'Red Raider Rampage', startup: 16, active: 50, recovery: 16, noDrift: true, keepMomentum: true,
       gravity: 0.2, armor: [0, 66], box: { dx: 36, dy: -40, w: 70, h: 64 }, dmg: 24, base: 11, scale: 0.16, angle: 42,
@@ -475,7 +475,7 @@ const KITS = {
   },
   iowastate: {
     neutralB: { name: 'Cyclone Spin', startup: 10, active: 1, recovery: 20,
-      projectile: { at: 10, dx: 40, dy: -50, vx: 4.5, vy: 0, w: 60, h: 100, life: 60, look: 'blob', color: '#cfd8e0', dmg: 3, pull: 6 } },
+      projectile: { at: 10, dx: 40, dy: -50, vx: 4.5, vy: 0, w: 60, h: 100, life: 60, look: 'tornado', dmg: 3, pull: 6 } },
     sideB: { name: 'Wing Gust', startup: 10, active: 5, recovery: 20,
       box: { dx: 56, dy: -34, w: 130, h: 70 }, dmg: 3, base: 9, scale: 0.03, angle: 10 },
     upB: { name: 'Twister Rise', startup: 4, active: 30, recovery: 16,
@@ -485,7 +485,7 @@ const KITS = {
       box: { dx: 0, dy: 8, w: 50, h: 42 }, dmg: 9, base: 6, scale: 0.09, angle: -60,
       onFrame(f, me) { if (f === 8) { me.vx = 0; me.vy = 13; } } },
     super: { name: 'Cy-Clone', banner: 'Cy-Clone', startup: 14, active: 1, recovery: 22,
-      projectile: { at: 14, dx: 20, dy: -60, vx: 6, vy: 0, w: 120, h: 170, life: 110, look: 'blob', color: '#cfd8e0', pierce: true,
+      projectile: { at: 14, dx: 20, dy: -60, vx: 6, vy: 0, w: 120, h: 170, life: 110, look: 'tornado', pierce: true,
         dmg: 20, base: 12, scale: 0.17, angle: 75 } },
   },
   kansas: {
@@ -498,7 +498,7 @@ const KITS = {
       box: { dx: 8, dy: -54, w: 50, h: 40 }, dmg: 3, base: 3, scale: 0.04, angle: 80,
       onFrame(f, me) { if (f === 4 || f === 14 || f === 24) { me.vy = -9.5; me.vx += 2.5 * me.facing; } } },
     downB: { name: 'Wheat Wave', startup: 12, active: 1, recovery: 20,
-      projectile: { at: 12, dx: 40, dy: -16, vx: 7, vy: 0, w: 80, h: 32, life: 44, look: 'blob', color: '#e8c860', dmg: 6, base: 7, scale: 0.09, angle: 60 } },
+      projectile: { at: 12, dx: 40, dy: -16, vx: 7, vy: 0, w: 80, h: 32, life: 44, look: 'wheat', dmg: 6, base: 7, scale: 0.09, angle: 60 } },
     super: { name: 'Rock Chalk', banner: 'Rock Chalk', startup: 12, active: 1, recovery: 22,
       projectile: { at: 12, dx: 10, dy: -60, vx: 11, vy: 0, w: 140, h: 100, life: 110, look: 'bird', color: '#0051ba', pierce: true,
         dmg: 22, base: 11, scale: 0.17, angle: 42 } },

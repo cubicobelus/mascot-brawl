@@ -1,7 +1,8 @@
 'use strict';
 // Stage layout (the same on every stage, so fights stay fair) and the stage themes with their hazards.
-// A theme: name, draw(ctx, hz) for the background and platforms, and optionally home (a roster id),
-// init() returning hazard state, update(hz, fighters, hit) each tick, onKO(hz), drawFront(ctx, hz).
+// A theme: name, back(ctx, hz) for the sky and stands, ground(ctx, hz) for the field and platforms, and optionally
+// home (a roster id), init() returning hazard state, update(hz, fighters, hit) each tick, onKO(hz),
+// drawFront(ctx, hz) in the world and drawOverlay(ctx, hz) on the screen.
 
 const STAGE = {
   w: 1280, h: 720,
@@ -30,51 +31,128 @@ function drawLights(ctx, color) {
   }
 }
 
-// The field block: dirt, turf, end zones in two colours, yard lines.
-function drawField(ctx, left, right, label) {
-  const m = STAGE.main, ez = 70;
-  ctx.fillStyle = '#3d2a1a';
+// A crowd in the stands: rows of fans (body and head) in the given colours. They sway a little and jump
+// when game.cheer is up (big hits, KOs).
+function drawCrowd(ctx, y0, rows, colors, perRow = 64) {
+  const t = game.t, cheer = game.cheer || 0, skins = ['#e0b48a', '#c68c5a', '#8a5a3a', '#f0c8a0', '#5a3a24'];
+  // dimmed so the fans stay in the background and never compete with the fighters
+  ctx.globalAlpha = 0.5;
+  for (let r = 0; r < rows; r++) {
+    const y = y0 + r * 24, spacing = 1400 / perRow;
+    for (let k = 0; k < perRow; k++) {
+      const h = (k * 73 + r * 131) % 97;
+      if (h < 9) continue;  // a few empty seats
+      const x = -60 + k * spacing + (r % 2) * spacing / 2 + (h % 5);
+      const jump = cheer * Math.abs(Math.sin((t + h * 3) / 4)) * 7 + Math.sin((t + h * 5) / 30) * 0.8;
+      const col = colors[h % colors.length];
+      ctx.fillStyle = col;
+      ctx.fillRect(x - 5, y - jump - 9, 10, 12);
+      ctx.fillStyle = skins[h % skins.length];
+      ctx.beginPath(); ctx.arc(x, y - jump - 13, 4, 0, Math.PI * 2); ctx.fill();
+      if (cheer > 0.3 && h % 3 === 0) {
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(x - 4, y - jump - 8); ctx.lineTo(x - 7, y - jump - 20);
+        ctx.moveTo(x + 4, y - jump - 8); ctx.lineTo(x + 7, y - jump - 20);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+// goalposts at the back of each end zone, drawn faintly so they never read as platforms
+function drawGoalposts(ctx) {
+  const m = STAGE.main;
+  ctx.globalAlpha = 0.6;
+  ctx.strokeStyle = '#f2c21b';
+  ctx.lineCap = 'round';
+  for (const x of [m.x1 + 20, m.x2 - 20]) {
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(x, m.y); ctx.lineTo(x, m.y - 70); ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x - 34, m.y - 190); ctx.lineTo(x - 34, m.y - 70); ctx.lineTo(x + 34, m.y - 70); ctx.lineTo(x + 34, m.y - 190); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.lineCap = 'butt';
+}
+
+// The field block: dirt, striped turf, end zones in two colours with labels, yard lines.
+function drawField(ctx, left, right, labels) {
+  const m = STAGE.main, ez = 70, inner = (m.x2 - m.x1 - 2 * ez) / 10;
+  const dirt = ctx.createLinearGradient(0, m.y, 0, m.bottom);
+  dirt.addColorStop(0, '#4a3220');
+  dirt.addColorStop(1, '#2a1c10');
+  ctx.fillStyle = dirt;
   ctx.fillRect(m.x1, m.y + 14, m.x2 - m.x1, m.bottom - m.y - 14);
-  ctx.fillStyle = '#2f8a3e';
-  ctx.fillRect(m.x1, m.y, m.x2 - m.x1, 16);
+  for (let k = 0; k < 10; k++) {
+    ctx.fillStyle = k % 2 ? '#2f8a3e' : '#38994a';
+    ctx.fillRect(m.x1 + ez + k * inner, m.y, inner + 1, 16);
+  }
   ctx.fillStyle = left;
   ctx.fillRect(m.x1, m.y, ez, 16);
   ctx.fillStyle = right;
   ctx.fillRect(m.x2 - ez, m.y, ez, 16);
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  for (let x = m.x1 + ez; x <= m.x2 - ez + 1; x += (m.x2 - m.x1 - 2 * ez) / 10) ctx.fillRect(x - 1, m.y, 2, 16);
-  if (label) {
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  for (let x = m.x1 + ez; x <= m.x2 - ez + 1; x += inner) ctx.fillRect(x - 1, m.y, 2, 16);
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.fillRect(m.x1, m.y, m.x2 - m.x1, 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(m.x1, m.y + 14, m.x2 - m.x1, 3);
+  if (labels) {
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
     ctx.font = 'bold 11px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    for (const x of [m.x1 + ez / 2, m.x2 - ez / 2]) ctx.fillText(label, x, m.y + 12);
+    ctx.fillText(labels[0], m.x1 + ez / 2, m.y + 12);
+    ctx.fillText(labels[1], m.x2 - ez / 2, m.y + 12);
   }
 }
 
 function drawPlatforms(ctx, top, side, shake) {
   STAGE.plats.forEach((p, i) => {
     const dy = shake ? Math.sin(shake * 1.7 + i) * shake * 0.4 : 0;
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(p.x1 + 6, p.y + 14 + dy, p.x2 - p.x1 - 12, 5);
     ctx.fillStyle = top;
     ctx.fillRect(p.x1, p.y + dy, p.x2 - p.x1, 8);
     ctx.fillStyle = side;
-    ctx.fillRect(p.x1, p.y + 8 + dy, p.x2 - p.x1, 4);
+    ctx.fillRect(p.x1, p.y + 8 + dy, p.x2 - p.x1, 5);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillRect(p.x1, p.y + dy, p.x2 - p.x1, 2);
   });
 }
 
-function drawPracticeField(ctx) {
+// the two picked schools, for the Practice Field's end zones and crowd
+function pickedTeams() {
+  return game.sel.map(s => ROSTER[s.i]);
+}
+
+// ---- Practice Field ----
+
+function practiceBack(ctx) {
   const sky = ctx.createLinearGradient(0, 0, 0, STAGE.h);
   sky.addColorStop(0, '#0b1530');
   sky.addColorStop(1, '#22365c');
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, STAGE.w, STAGE.h);
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  for (let k = 0; k < 40; k++) ctx.fillRect((k * 211) % 1280, (k * 97) % 260, 2, 2);
   ctx.fillStyle = '#16233d';
   ctx.beginPath();
   ctx.moveTo(0, 470); ctx.lineTo(160, 300); ctx.lineTo(1120, 300); ctx.lineTo(1280, 470); ctx.lineTo(1280, 720); ctx.lineTo(0, 720);
   ctx.fill();
   ctx.fillStyle = '#1d2d4c';
-  for (let r = 0; r < 5; r++) ctx.fillRect(0, 320 + r * 30, STAGE.w, 3);
+  for (let r = 0; r < 6; r++) ctx.fillRect(0, 318 + r * 24, STAGE.w, 3);
+  const [a, b] = pickedTeams();
+  drawCrowd(ctx, 330, 6, [a.color, b.color, '#d9dee8', a.trim, b.trim], 52);
   drawLights(ctx, '#fff6d8');
-  drawField(ctx, '#7a1f2b', '#1f3f7a');
+}
+
+function practiceGround(ctx) {
+  const [a, b] = pickedTeams();
+  drawGoalposts(ctx);
+  drawField(ctx, a.color, b.color, [a.school.slice(0, 4).toUpperCase(), b.school.slice(0, 4).toUpperCase()]);
   drawPlatforms(ctx, '#c9d2e3', '#7d889e');
 }
 
@@ -84,7 +162,7 @@ function drawPracticeField(ctx) {
 
 const BOONE_ORANGE = '#ff7300';
 
-function drawBoone(ctx, hz) {
+function booneBack(ctx, hz) {
   const sky = ctx.createLinearGradient(0, 0, 0, STAGE.h);
   sky.addColorStop(0, '#1b2140');
   sky.addColorStop(0.45, '#8a3d2c');
@@ -95,23 +173,19 @@ function drawBoone(ctx, hz) {
   // prairie on the horizon
   ctx.fillStyle = '#3a2a1a';
   ctx.fillRect(0, 300, STAGE.w, 20);
-  // stands: orange and black rows
+  // stands: orange and black rows, packed with fans who jump on each letter of the chant
   ctx.fillStyle = '#1a1a1a';
   ctx.beginPath();
   ctx.moveTo(0, 480); ctx.lineTo(150, 310); ctx.lineTo(1130, 310); ctx.lineTo(1280, 480); ctx.lineTo(1280, 720); ctx.lineTo(0, 720);
   ctx.fill();
-  for (let r = 0; r < 6; r++) {
+  for (let r = 0; r < 7; r++) {
     ctx.fillStyle = r % 2 ? '#2a2a2a' : '#c85a00';
-    ctx.fillRect(0, 322 + r * 26, STAGE.w, 4);
+    ctx.fillRect(0, 316 + r * 24, STAGE.w, 3);
   }
-  // crowd dots in the stands, some waving
-  const t = hz ? hz.t : 0;
-  for (let k = 0; k < 120; k++) {
-    const x = (k * 97) % 1280, y = 330 + ((k * 53) % 130);
-    const jump = hz && hz.chantBeat > 0 ? Math.abs(Math.sin((t + k) / 3)) * 4 : 0;
-    ctx.fillStyle = k % 3 ? BOONE_ORANGE : '#f2f2f2';
-    ctx.fillRect(x, y - jump, 4, 5);
-  }
+  const saved = game.cheer;
+  if (hz && hz.chantBeat > 0) game.cheer = Math.max(game.cheer || 0, 1);
+  drawCrowd(ctx, 334, 6, [BOONE_ORANGE, BOONE_ORANGE, '#f2f2f2', '#1a1a1a'], 60);
+  game.cheer = saved;
   // scoreboard
   ctx.fillStyle = '#111';
   ctx.fillRect(540, 150, 200, 90);
@@ -128,7 +202,11 @@ function drawBoone(ctx, hz) {
   ctx.font = '12px system-ui, sans-serif';
   ctx.fillText('STILLWATER, OK', 640, 230);
   drawLights(ctx, '#fff1d0');
-  drawField(ctx, BOONE_ORANGE, BOONE_ORANGE, 'OSU');
+}
+
+function booneGround(ctx, hz) {
+  drawGoalposts(ctx);
+  drawField(ctx, BOONE_ORANGE, BOONE_ORANGE, ['OSU', 'OSU']);
   drawPlatforms(ctx, '#f2f2f2', BOONE_ORANGE, hz ? hz.platShake : 0);
 }
 
@@ -178,6 +256,7 @@ function booneOnKO(hz) {
   hz.horse = { dir, x: dir > 0 ? -150 : STAGE.w + 150, hitIds: new Set() };
 }
 
+// wind streaks and the Spirit Rider, in the world
 function drawBooneFront(ctx, hz) {
   if (hz.wind > 0) {
     ctx.strokeStyle = 'rgba(255, 240, 210, 0.35)';
@@ -187,6 +266,13 @@ function drawBooneFront(ctx, hz) {
       const x = ((hz.t * 14 * hz.windDir + k * 211) % 1400 + 1400) % 1400 - 60;
       ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - hz.windDir * 50, y); ctx.stroke();
     }
+  }
+  if (hz.horse) drawSpiritRider(ctx, hz.horse.x, STAGE.main.y, hz.horse.dir, hz.t);
+}
+
+// on-screen text for the hazards, drawn without the camera so it stays readable when zoomed in
+function drawBooneOverlay(ctx, hz) {
+  if (hz.wind > 0) {
     ctx.fillStyle = 'rgba(255, 240, 210, 0.9)';
     ctx.font = 'bold 16px system-ui, sans-serif';
     ctx.textAlign = 'center';
@@ -204,7 +290,6 @@ function drawBooneFront(ctx, hz) {
     ctx.fillText(hz.letter, x, 130);
     ctx.globalAlpha = 1;
   }
-  if (hz.horse) drawSpiritRider(ctx, hz.horse.x, STAGE.main.y, hz.horse.dir, hz.t);
 }
 
 function drawSpiritRider(ctx, x, y, dir, t) {
@@ -252,8 +337,10 @@ function drawSpiritRider(ctx, x, y, dir, t) {
   ctx.restore();
 }
 
+// back: the sky and stands (drawn with some parallax); ground: the field and platforms; draw: both, for previews
 const STAGES = [
-  { id: 'practice', name: 'Practice Field', draw: drawPracticeField },
-  { id: 'boone', name: 'Boone Pickens Stadium', school: 'Oklahoma State', home: 'okstate', draw: drawBoone,
-    init: booneInit, update: booneUpdate, onKO: booneOnKO, drawFront: drawBooneFront },
+  { id: 'practice', name: 'Practice Field', back: practiceBack, ground: practiceGround },
+  { id: 'boone', name: 'Boone Pickens Stadium', school: 'Oklahoma State', home: 'okstate', back: booneBack, ground: booneGround,
+    init: booneInit, update: booneUpdate, onKO: booneOnKO, drawFront: drawBooneFront, drawOverlay: drawBooneOverlay },
 ];
+for (const st of STAGES) st.draw = (c, hz) => { st.back(c, hz); st.ground(c, hz); };

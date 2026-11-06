@@ -36,6 +36,10 @@ const game = {
   stage: STAGES[0],
   hz: null,
   sparks: [],
+  fx: [],
+  cheer: 0,
+  flash: 0,
+  resultT: 0,
   paused: false,
   winner: null,
   t: 0,
@@ -44,7 +48,8 @@ const game = {
 function startFight() {
   game.fighters = [0, 1].map(i => new Fighter(i, fighterData(ROSTER[game.sel[i].i]), i === 1 && game.p2cpu, STOCKS));
   const stage = STAGES[game.stageIdx];
-  Object.assign(game, { screen: 'fight', countdown: 150, sparks: [], projectiles: [], paused: false, winner: null,
+  camReset();
+  Object.assign(game, { screen: 'fight', countdown: 150, sparks: [], fx: [], cheer: 0, flash: 0, projectiles: [], paused: false, winner: null,
     dark: 0, sepia: 0, banner: null, freeze: 0, shake: 0, stage, hz: stage.init ? stage.init() : null });
   Input.clear();
 }
@@ -62,8 +67,18 @@ function tick() {
   if (game.screen === 'select') tickSelect();
   else if (game.screen === 'stage') tickStage();
   else if (game.screen === 'fight') tickFight();
-  else if (game.screen === 'result' && (Input.hit('KeyF') || Input.hit('KeyK') || Input.hit('Enter'))) toSelect();
+  else if (game.screen === 'result') tickResult();
   Input.endTick();
+}
+
+// the winner screen: confetti in the winner's colours for a few seconds
+function tickResult() {
+  game.resultT++;
+  updateSparks();
+  updateFx();
+  const w = game.winner;
+  if (w && game.resultT < 240 && game.resultT % 2 === 0) fxConfetti([w.m.color, w.m.trim, '#ffe28a', '#ffffff']);
+  if (game.resultT > 20 && (Input.hit('KeyF') || Input.hit('KeyK') || Input.hit('Enter'))) toSelect();
 }
 
 function moveCursor(s, c) {
@@ -122,6 +137,8 @@ function tickFight() {
   if (Input.hit('KeyP')) game.paused = !game.paused;
   if (game.paused) return;
   updateSparks();
+  updateFx();
+  camUpdate();
   if (game.shake > 0) game.shake *= 0.85;
   if (game.banner && --game.banner.t <= 0) game.banner = null;
   if (game.freeze > 0) { game.freeze--; return; }
@@ -144,9 +161,12 @@ function tickFight() {
   if (game.stage.update) game.stage.update(game.hz, game.fighters, applyHit);
 
   for (const f of game.fighters) {
+    // a smoke trail behind anyone sent flying
+    const sp = Math.hypot(f.vx, f.vy);
+    if (!f.dead && f.hitstun > 0 && sp > 7 && game.t % 2 === 0) fxSmoke(f.x, f.y - f.h / 2, sp > 12);
     if (f.outOfBounds()) {
-      burst(Math.max(20, Math.min(STAGE.w - 20, f.x)), Math.max(20, Math.min(STAGE.h - 20, f.y - f.h / 2)), P_COLORS[f.idx], 40, 9);
-      game.shake = 14;
+      fxKO(f);
+      game.shake = 16;
       f.ko();
       if (game.stage.onKO) game.stage.onKO(game.hz);
     }
@@ -155,6 +175,7 @@ function tickFight() {
   if (alive.length < 2) {
     game.winner = alive[0] || null;
     game.screen = 'result';
+    game.resultT = 0;
   }
 }
 
@@ -167,6 +188,8 @@ function handleEvents(f) {
     } else if (e.type === 'dark') game.dark = e.t;
     else if (e.type === 'sepia') game.sepia = game.sepiaMax = e.t;
     else if (e.type === 'shake') game.shake = Math.max(game.shake, e.amount);
+    else if (e.type === 'dust') fxDust(e.x, e.y, e.n, e.dir || 0, e.power || 1);
+    else if (e.type === 'ring') fxRing(e.x, e.y, 'rgba(255,255,255,0.7)', 8, 1.8, 14);
   }
   f.events.length = 0;
 }
@@ -188,13 +211,13 @@ function applyHit(src, def, move) {
       def.facing = Math.sign(src.x - def.x) || def.facing;
       const kb = src.takeHit(def, ch, false);
       gainMeter(def, src, ch.dmg);
-      hitEffects(src, ch.dmg, kb);
+      hitEffects(src, ch.dmg, kb, def);
     }
     return;
   }
   const kb = def.takeHit(src, move, def.windowOn('armor'));
   gainMeter(src.owner || src, def, move.dmg);
-  hitEffects(def, move.dmg, kb);
+  hitEffects(def, move.dmg, kb, src);
 }
 
 function gainMeter(attacker, victim, dmg) {
@@ -203,10 +226,15 @@ function gainMeter(attacker, victim, dmg) {
   victim.meter = Math.min(METER_MAX, victim.meter + dmg * 0.7);
 }
 
-function hitEffects(victim, dmg, kb) {
+// src: whatever landed the hit, so the spark shows on the side it came from
+function hitEffects(victim, dmg, kb, src) {
   game.freeze = Math.min(12, Math.round(3 + dmg / 2));
   game.shake = Math.max(game.shake, Math.min(12, kb * 0.5));
-  burst(victim.x, victim.y - victim.h / 2, '#fff3b0', 6 + Math.round(dmg), 4 + kb * 0.2);
+  const sx = src && src.x !== undefined ? src.x : victim.x;
+  const x = victim.x + clampN(sx - victim.x, -victim.w * 0.5, victim.w * 0.5), y = victim.y - victim.h * 0.55;
+  fxHit(x, y, dmg, kb);
+  burst(x, y, '#fff3b0', 3 + Math.round(dmg / 2), 3 + kb * 0.2);
+  if (kb > 10) game.cheer = Math.max(game.cheer, 0.5);
 }
 
 function spawnProjectile(owner, p) {
@@ -254,72 +282,36 @@ function draw() {
   ctx.setTransform(viewScale, 0, 0, viewScale, 0, 0);
   if (game.screen === 'select') { drawSelect(); return; }
   if (game.screen === 'stage') { drawStageSelect(); return; }
-  const s = game.shake;
-  ctx.setTransform(viewScale, 0, 0, viewScale, (Math.random() - 0.5) * s * viewScale, (Math.random() - 0.5) * s * viewScale);
-  game.stage.draw(ctx, game.hz);
+  const s = game.shake, sx = (Math.random() - 0.5) * s, sy = (Math.random() - 0.5) * s;
+  // the stands move less than the field when the camera zooms, which gives some depth
+  camApply(ctx, 0.45, sx, sy);
+  game.stage.back(ctx, game.hz);
+  camApply(ctx, 1, sx, sy);
+  game.stage.ground(ctx, game.hz);
+  drawShadows(ctx);
+  drawFx(ctx, 'back');
   for (const p of game.projectiles) drawProjectile(p);
   for (const f of game.fighters) f.draw(ctx);
   for (const p of game.sparks) {
     ctx.globalAlpha = Math.min(1, p.life / 20);
     ctx.fillStyle = p.color;
-    ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+    ctx.fillRect(p.x - 2.5, p.y - 2.5, 5, 5);
   }
   ctx.globalAlpha = 1;
+  drawFx(ctx, 'front');
   if (game.stage.drawFront) game.stage.drawFront(ctx, game.hz);
   ctx.setTransform(viewScale, 0, 0, viewScale, 0, 0);
+  if (game.stage.drawOverlay) game.stage.drawOverlay(ctx, game.hz);
+  drawOffscreen(ctx);
+  if (game.screen !== 'result') drawFx(ctx, 'screen');
+  if (game.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${game.flash / 10 * 0.3})`; ctx.fillRect(0, 0, STAGE.w, STAGE.h); }
   if (game.dark > 0) drawDark();
   if (game.sepia > 0) drawSepia();
   drawHud();
   if (game.banner) drawBanner(game.banner);
   if (game.countdown > 0) bigText(game.countdown > 30 ? String(Math.ceil((game.countdown - 30) / 40)) : 'GO!', 360);
   if (game.paused) bigText('Paused', 330, 'P to resume, Esc to quit');
-  if (game.screen === 'result') {
-    ctx.fillStyle = 'rgba(5,10,20,0.6)';
-    ctx.fillRect(0, 0, STAGE.w, STAGE.h);
-    const w = game.winner;
-    bigText(w ? `${w.isCpu ? 'CPU' : 'P' + (w.idx + 1)} wins! (${w.m.name})` : 'Draw', 330, 'F or K to play again');
-  }
-}
-
-function drawProjectile(p) {
-  const fade = Math.min(1, p.life / 8);
-  ctx.globalAlpha = fade;
-  if (p.look === 'wave') {
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-    ctx.lineWidth = 4;
-    for (let k = 0; k < 3; k++) {
-      ctx.beginPath();
-      ctx.arc(p.x - p.facing * 18, p.y, 10 + k * 9, -0.9, 0.9);
-      if (p.facing < 0) { ctx.beginPath(); ctx.arc(p.x - p.facing * 18, p.y, 10 + k * 9, Math.PI - 0.9, Math.PI + 0.9); }
-      ctx.stroke();
-    }
-  } else if (p.look === 'hedge') {
-    const grow = Math.min(1, (p.life > 18 ? 24 - p.life : 6) / 6);
-    ctx.fillStyle = '#2f6b2a';
-    roundRect(ctx, p.x - p.w / 2, p.y + p.h / 2 - p.h * grow, p.w, p.h * grow, 12);
-    ctx.fill();
-    ctx.fillStyle = '#3f8a37';
-    for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(p.x - p.w / 2 + 8 + k * 11, p.y + p.h / 2 - p.h * grow + 8, 9, 0, Math.PI * 2); ctx.fill(); }
-  } else if (p.look === 'herd') {
-    for (let k = 0; k < 3; k++) {
-      ctx.save();
-      ctx.translate(p.x + (k - 1) * 46, p.y + p.h / 2 + (k % 2) * 4);
-      ctx.scale(p.facing * 0.8, 0.8);
-      drawMascot(ctx, p.owner.m, game.t + k * 7, 'run');
-      ctx.restore();
-    }
-  } else if (p.look === 'bird') {
-    ctx.fillStyle = p.color || '#ffe28a';
-    const flap = Math.sin(game.t / 2) * p.h * 0.3;
-    ctx.beginPath(); ctx.moveTo(p.x + p.facing * p.w * 0.5, p.y); ctx.lineTo(p.x - p.facing * p.w * 0.4, p.y - p.h * 0.5 - flap);
-    ctx.lineTo(p.x - p.facing * p.w * 0.2, p.y); ctx.lineTo(p.x - p.facing * p.w * 0.4, p.y + p.h * 0.5 + flap); ctx.fill();
-  } else if (p.look === 'none') {
-    // invisible burst
-  } else {
-    ctx.fillStyle = p.color || '#ffe28a';
-    ctx.beginPath(); ctx.ellipse(p.x, p.y, p.w / 2, p.h / 2, 0, 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.globalAlpha = 1;
+  if (game.screen === 'result') drawResult(ctx);
 }
 
 function drawDark() {
@@ -332,11 +324,12 @@ function drawDark() {
   l.globalCompositeOperation = 'destination-out';
   for (const f of game.fighters) {
     if (f.dead) continue;
-    const g = l.createRadialGradient(f.x, f.y - f.h / 2, 50, f.x, f.y - f.h / 2, 100);
+    const [x, y] = toScreen(f.x, f.y - f.h / 2), r = 100 * CAM.z;
+    const g = l.createRadialGradient(x, y, r / 2, x, y, r);
     g.addColorStop(0, 'rgba(0,0,0,1)');
     g.addColorStop(1, 'rgba(0,0,0,0)');
     l.fillStyle = g;
-    l.fillRect(f.x - 100, f.y - f.h / 2 - 100, 200, 200);
+    l.fillRect(x - r, y - r, 2 * r, 2 * r);
   }
   ctx.drawImage(darkLayer, 0, 0);
 }
@@ -505,7 +498,8 @@ function drawSelect() {
       ctx.beginPath(); ctx.rect(x, y, CARD.w, CARD.h - 8); ctx.clip();
       ctx.translate(x + 34, y + CARD.h - 10);
       ctx.scale(0.8, 0.8);
-      drawMascot(ctx, fighterData(e), game.t, 'idle');
+      const ready = game.sel.some(s => s.ready && s.i === k);
+      drawMascot(ctx, fighterData(e), game.t, ready ? (Math.floor(game.t / 20) % 2 ? 'special' : 'uppercut') : 'idle');
       ctx.restore();
     } else {
       ctx.fillStyle = 'rgba(255,255,255,0.12)';
@@ -607,7 +601,9 @@ function drawPreview(e, i) {
   const ps = ART[d.id].body === 'beast' ? 1.1 : 1.4;
   ctx.translate(x + 64, y + 150);
   ctx.scale(ps, ps);
-  drawMascot(ctx, d, game.t, 'idle');
+  // the preview shows off a few poses in turn
+  const show = ['idle', 'attack', 'kick', 'special', 'uppercut', 'throw'];
+  drawMascot(ctx, d, game.t, show[Math.floor(game.t / 70) % show.length]);
   ctx.restore();
   const rows = [['Neutral', 'neutralB'], ['Side', 'sideB'], ['Up', 'upB'], ['Down', 'downB'], ['Heisman', 'super']];
   rows.forEach(([label, key], r) => {

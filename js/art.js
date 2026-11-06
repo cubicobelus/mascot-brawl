@@ -103,9 +103,48 @@ function artPose(pose, t) {
   } else if (pose === 'hurt') {
     const s = Math.sin(t * 0.8);
     p.armF = 2.6 + s * 0.4; p.armB = 2.2 - s * 0.4; p.legF = 0.5; p.legB = -0.5; p.kneeB = -0.6; p.lean = -0.18;
+  } else if (pose === 'kick') {
+    p.legF = 1.45; p.legB = -0.25; p.armF = 0.9; p.armB = -0.9; p.lean = -0.12;
+  } else if (pose === 'sweep') {
+    p.legF = 1.35; p.kneeF = -0.1; p.legB = -0.9; p.kneeB = -1.6; p.armF = 0.7; p.armB = -0.3; p.lean = 0.25; p.bob = 5;
+  } else if (pose === 'uppercut') {
+    p.armF = 2.9; p.armB = -0.4; p.legF = 0.3; p.legB = -0.4; p.kneeB = -0.5; p.lean = -0.08; p.bob = -3;
+  } else if (pose === 'stomp') {
+    p.legF = 0.15; p.legB = -0.15; p.armF = 2.6; p.armB = 2.4;
+  } else if (pose === 'charge') {
+    const s = Math.sin(t / 2);
+    p.legF = s * 0.8; p.legB = -s * 0.8; p.kneeF = -Math.max(0, -s); p.kneeB = -Math.max(0, s);
+    p.armF = -0.5; p.armB = -0.9; p.lean = 0.38; p.swing = s;
+  } else if (pose === 'rise') {
+    p.armF = 2.9; p.armB = 2.7; p.legF = 0.2; p.kneeF = -0.9; p.legB = -0.3; p.kneeB = -1.1;
+  } else if (pose === 'guard') {
+    p.armF = 1.3; p.armB = 1.6; p.legF = 0.35; p.legB = -0.35; p.lean = -0.05;
+  } else if (pose === 'throw') {
+    p.armF = 2.2; p.armB = -0.7; p.legF = 0.45; p.legB = -0.4; p.lean = 0.1;
+  } else if (pose === 'brace') {
+    p.legF = 0.5; p.legB = -0.5; p.armF = 0.7; p.armB = 0.6; p.bob = 3; p.lean = 0.04;
   }
   return p;
 }
+
+// which pose a move shows: the normals each have their own, specials go by what the move does
+const NORMAL_POSES = { jab: 'attack', side: 'kick', up: 'uppercut', down: 'sweep', dair: 'stomp' };
+function movePose(mv) {
+  if (NORMAL_POSES[mv.name]) return NORMAL_POSES[mv.name];
+  const d = mv.def;
+  if (d.counter) return 'guard';
+  if (mv.name === 'upB') return 'rise';
+  if (d.keepMomentum) return 'charge';
+  if (d.projectile || mv.name === 'reload') return 'throw';
+  if (d.armor) return 'brace';
+  return 'special';
+}
+// poses where the arm punches straight out, and where a held weapon points along the arm
+const STRAIGHT_ARM = new Set(['attack', 'throw', 'uppercut']);
+const WEAPON_OUT = new Set(['attack', 'special', 'throw', 'uppercut', 'rise']);
+// four-legged fighters have fewer poses; the rest map onto these
+const BEAST_POSE = { kick: 'attack', sweep: 'attack', uppercut: 'attack', stomp: 'air', charge: 'run', throw: 'attack',
+  rise: 'air', guard: 'idle', brace: 'idle', special: 'attack' };
 
 // a jersey number per school, so it never changes between matches
 function jerseyNumber(m) {
@@ -157,7 +196,7 @@ function drawSuit(ctx, m, t, pose, A) {
     if (!A.shoe) { ctx.fillStyle = jersey; ctx.fillRect(fx, fy - 0.012 * h, 0.07 * h * shoeS, 0.022 * h); }
   };
   const arm = (x, a, col, slv, gl, front) => {
-    const bend = pose === 'attack' ? 0.05 : 0.45;
+    const bend = STRAIGHT_ARM.has(pose) ? 0.05 : 0.45;
     const ex = x + Math.sin(a) * upper, ey = shY + Math.cos(a) * upper;
     const hx = ex + Math.sin(a + bend) * fore, hy = ey + Math.cos(a + bend) * fore;
     limb(ctx, [[x, shY], [ex, ey]], armW * 1.15, slv);
@@ -210,6 +249,9 @@ function drawJersey(ctx, m, w, h) {
 }
 
 function drawBeast(ctx, m, t, pose, A) {
+  const charging = pose === 'charge';
+  pose = BEAST_POSE[pose] || pose;
+  if (charging) t *= 1.5;
   const h = m.h, W = m.w * 1.25, p = artPose(pose, t);
   const fur = m.skin, dark = shade(fur, -0.25);
   // the blanket is the team colour unless that is too close to the fur, then the trim colour
@@ -647,7 +689,7 @@ function capeBack(ctx, m, t, p) {
   });
 }
 // long weapons stand upright in the hand, and point along the arm when swinging
-function weaponAngle(a, pose) { return pose === 'attack' || pose === 'special' ? a : a + 2.4; }
+function weaponAngle(a, pose) { return WEAPON_OUT.has(pose) ? a : a + 2.4; }
 function propPitchfork(ctx, x, y, a, h, m, pose) {
   const d = weaponAngle(a, pose), dx = Math.sin(d), dy = Math.cos(d), L = 0.62 * h, px = -dy, py = dx;
   limb(ctx, [[x - dx * 0.15 * h, y - dy * 0.15 * h], [x + dx * L, y + dy * L]], 2.5, '#9aa3ad');
