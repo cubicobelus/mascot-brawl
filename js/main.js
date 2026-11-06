@@ -3,6 +3,18 @@
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+
+// The game is drawn in 1280 x 720 units. The canvas itself is sized to the pixels it takes on screen, so it
+// stays sharp on big and high-density screens instead of being a small picture stretched up.
+let viewScale = 1;
+function fitCanvas() {
+  const r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const w = Math.max(320, Math.round(r.width * dpr));
+  if (canvas.width !== w) { canvas.width = w; canvas.height = Math.round(w * 9 / 16); }
+  viewScale = canvas.width / 1280;
+}
+addEventListener('resize', fitCanvas);
+fitCanvas();
 const STOCKS = 3;
 const P_COLORS = ['#ff5a5a', '#5aa8ff'];
 const COLS = 8;
@@ -239,11 +251,11 @@ function updateSparks() {
 // ---- draw ----
 
 function draw() {
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(viewScale, 0, 0, viewScale, 0, 0);
   if (game.screen === 'select') { drawSelect(); return; }
   if (game.screen === 'stage') { drawStageSelect(); return; }
   const s = game.shake;
-  ctx.setTransform(1, 0, 0, 1, (Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
+  ctx.setTransform(viewScale, 0, 0, viewScale, (Math.random() - 0.5) * s * viewScale, (Math.random() - 0.5) * s * viewScale);
   game.stage.draw(ctx, game.hz);
   for (const p of game.projectiles) drawProjectile(p);
   for (const f of game.fighters) f.draw(ctx);
@@ -254,7 +266,7 @@ function draw() {
   }
   ctx.globalAlpha = 1;
   if (game.stage.drawFront) game.stage.drawFront(ctx, game.hz);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(viewScale, 0, 0, viewScale, 0, 0);
   if (game.dark > 0) drawDark();
   if (game.sepia > 0) drawSepia();
   drawHud();
