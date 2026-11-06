@@ -341,6 +341,7 @@ function drawSpiritRider(ctx, x, y, dir, t) {
 const STAGES = [
   { id: 'practice', name: 'Practice Field', back: practiceBack, ground: practiceGround },
   { id: 'boone', name: 'Boone Pickens Stadium', school: 'Oklahoma State', home: 'okstate', back: booneBack, ground: booneGround,
+    hazard: 'Spirit Rider after a KO, the O-S-U chant bumps the platforms, prairie wind',
     init: booneInit, update: booneUpdate, onKO: booneOnKO, drawFront: drawBooneFront, drawOverlay: drawBooneOverlay },
 ];
 for (const st of STAGES) st.draw = (c, hz) => { st.back(c, hz); st.ground(c, hz); };

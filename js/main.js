@@ -34,6 +34,7 @@ const game = {
   banner: null,
   stageIdx: 0,
   stage: STAGES[0],
+  hazards: true,
   hz: null,
   sparks: [],
   fx: [],
@@ -116,18 +117,23 @@ function tickSelect() {
   if (s1.ready && s2.ready) toStageSelect();
 }
 
-// Stage pick: starts on a picked mascot's home stadium if there is one.
+// Stage pick: starts on P1's home stadium if there is one, else the other fighter's.
 function toStageSelect() {
   game.screen = 'stage';
-  const ids = game.sel.map(s => ROSTER[s.i].id);
-  const home = STAGES.findIndex(st => st.home && ids.includes(st.home));
-  if (home >= 0) game.stageIdx = home;
+  for (const s of game.sel.slice().reverse()) {
+    const home = STAGES.findIndex(st => st.home === ROSTER[s.i].id);
+    if (home >= 0) game.stageIdx = home;
+  }
 }
 
+const STAGE_COLS = 4;
 function tickStage() {
   const c = Input.read(0), n = STAGES.length;
-  if (c.leftP || c.upP) game.stageIdx = (game.stageIdx + n - 1) % n;
-  if (c.rightP || c.downP) game.stageIdx = (game.stageIdx + 1) % n;
+  if (c.leftP) game.stageIdx = (game.stageIdx + n - 1) % n;
+  if (c.rightP) game.stageIdx = (game.stageIdx + 1) % n;
+  if (c.upP) game.stageIdx = (game.stageIdx + n - STAGE_COLS) % n;
+  if (c.downP) game.stageIdx = (game.stageIdx + STAGE_COLS) % n;
+  if (Input.hit('KeyH')) game.hazards = !game.hazards;
   if (c.attackP || Input.hit('Enter')) startFight();
   else if (c.specialP || Input.hit('Escape')) toSelect();
 }
@@ -158,7 +164,7 @@ function tickFight() {
   if (aHit) applyHit(a, b, aHit);
   if (bHit) applyHit(b, a, bHit);
   updateProjectiles();
-  if (game.stage.update) game.stage.update(game.hz, game.fighters, applyHit);
+  if (game.stage.update && game.hazards) game.stage.update(game.hz, game.fighters, applyHit);
 
   for (const f of game.fighters) {
     // a smoke trail behind anyone sent flying
@@ -168,7 +174,7 @@ function tickFight() {
       fxKO(f);
       game.shake = 16;
       f.ko();
-      if (game.stage.onKO) game.stage.onKO(game.hz);
+      if (game.stage.onKO && game.hazards) game.stage.onKO(game.hz);
     }
   }
   const alive = game.fighters.filter(f => !f.out);
@@ -551,10 +557,12 @@ function drawStageSelect() {
   ctx.textAlign = 'center';
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 40px system-ui, sans-serif';
-  ctx.fillText('CHOOSE A STAGE', STAGE.w / 2, 80);
-  const sc = 0.4, cw = STAGE.w * sc, ch = STAGE.h * sc, gap = 60, x0 = (STAGE.w - STAGES.length * cw - (STAGES.length - 1) * gap) / 2;
+  ctx.fillText('CHOOSE A STAGE', STAGE.w / 2, 64);
+  // a grid of small previews, four to a row, with the picked stage's details underneath
+  const sc = 0.205, cw = STAGE.w * sc, ch = STAGE.h * sc, gx = 28, gy = 62;
+  const x0 = (STAGE.w - STAGE_COLS * cw - (STAGE_COLS - 1) * gx) / 2;
   STAGES.forEach((st, k) => {
-    const x = x0 + k * (cw + gap), y = 170;
+    const x = x0 + (k % STAGE_COLS) * (cw + gx), y = 100 + Math.floor(k / STAGE_COLS) * (ch + gy);
     ctx.save();
     ctx.beginPath(); ctx.rect(x, y, cw, ch); ctx.clip();
     ctx.translate(x, y);
@@ -567,14 +575,22 @@ function drawStageSelect() {
     ctx.strokeRect(x - 3, y - 3, cw + 6, ch + 6);
     ctx.textAlign = 'center';
     ctx.fillStyle = on ? '#ffffff' : '#9fb0c8';
-    ctx.font = 'bold 22px system-ui, sans-serif';
-    ctx.fillText(st.name, x + cw / 2, y + ch + 40);
-    ctx.font = '14px system-ui, sans-serif';
-    ctx.fillText(st.school ? `Home of ${st.school}` : 'No hazards', x + cw / 2, y + ch + 64);
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.fillText(st.name, x + cw / 2, y + ch + 22, cw);
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.fillText(st.school ? `Home of ${st.school}` : 'Neutral field', x + cw / 2, y + ch + 40, cw);
   });
+  const st = STAGES[game.stageIdx], y = 100 + Math.ceil(STAGES.length / STAGE_COLS) * (ch + gy) + 10;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 26px system-ui, sans-serif';
+  ctx.fillText(st.name, STAGE.w / 2, y);
+  ctx.font = '16px system-ui, sans-serif';
+  ctx.fillStyle = game.hazards ? '#ffd27a' : '#7d8aa0';
+  ctx.fillText(st.hazard ? (game.hazards ? 'Hazard: ' : 'Hazard off: ') + st.hazard : 'No hazards', STAGE.w / 2, y + 28);
   ctx.fillStyle = '#c8d3e6';
   ctx.font = '15px system-ui, sans-serif';
-  ctx.fillText('P1: A / D to pick, F to fight, G to go back', STAGE.w / 2, 650);
+  ctx.fillText(`P1: W A S D to pick, F to fight, G to go back.   H: hazards ${game.hazards ? 'ON' : 'OFF'}`, STAGE.w / 2, 690);
 }
 
 function drawPreview(e, i) {
