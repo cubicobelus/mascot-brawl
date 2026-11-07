@@ -6,7 +6,7 @@
 const WEIGHTS = {
   Light:  { walk: 4.5, air: 4.1, gravity: 0.44, fallSpeed: 8.5, jump: 11.2, airJumps: 2, weight: 0.85, power: 0.85, speed: 0.85 },
   Medium: { walk: 4.0, air: 3.6, gravity: 0.52, fallSpeed: 10, jump: 12, airJumps: 1, weight: 1.0, power: 1.0, speed: 1.0 },
-  Heavy:  { walk: 3.4, air: 3.1, gravity: 0.58, fallSpeed: 11.5, jump: 12.2, airJumps: 1, weight: 1.22, power: 1.15, speed: 1.12 },
+  Heavy:  { walk: 3.4, air: 3.1, gravity: 0.58, fallSpeed: 11.5, jump: 12.2, airJumps: 1, weight: 1.12, power: 1.07, speed: 1.12 },
 };
 
 const SHAPES = {
@@ -45,7 +45,7 @@ function baseMoves(h, power, speed) {
   return {
     jab:  mv(3, 3, 9,  { dx: 30, dy: -h * 0.55, w: 36, h: 26 }, 3, 3, 0.04, 30),
     side: mv(8, 4, 18, { dx: 42, dy: -h * 0.55, w: 48, h: 30 }, 9, 6, 0.11, 38),
-    up:   mv(6, 5, 14, { dx: 6, dy: -h - 12, w: 56, h: 34 }, 7, 6, 0.095, 85),
+    up:   mv(6, 5, 14, { dx: 6, dy: -h * 0.85, w: 56, h: 44 }, 7, 6, 0.095, 85),
     down: mv(7, 4, 16, { dx: 28, dy: -10, w: 70, h: 20 }, 8, 7, 0.07, 25),
     dair: mv(9, 6, 14, { dx: 0, dy: 10, w: 42, h: 32 }, 9, 4, 0.08, -75),
   };
