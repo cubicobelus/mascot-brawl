@@ -153,7 +153,7 @@ class Fighter {
       else { this.x = S.x2 + hw; this.vx = Math.max(0, this.vx); }
     }
     if (!this.onGround && this.vy >= 0 && this.drop === 0) {
-      for (const p of STAGE.plats) {
+      for (const p of STAGE.plats.concat(STAGE.extra)) {
         if (prevY <= p.y && this.y >= p.y && this.x > p.x1 && this.x < p.x2) { this.land(p.y, true); break; }
       }
     }

@@ -50,6 +50,7 @@ function startFight() {
   game.fighters = [0, 1].map(i => new Fighter(i, fighterData(ROSTER[game.sel[i].i]), i === 1 && game.p2cpu, STOCKS));
   const stage = STAGES[game.stageIdx];
   camReset();
+  resetStagePlats();
   Object.assign(game, { screen: 'fight', countdown: 150, sparks: [], fx: [], cheer: 0, flash: 0, projectiles: [], paused: false, winner: null,
     dark: 0, sepia: 0, banner: null, freeze: 0, shake: 0, stage, hz: stage.init ? stage.init() : null });
   Input.clear();
@@ -64,6 +65,7 @@ function toSelect() {
 
 function tick() {
   game.t++;
+  if (game.screen === 'select' || game.screen === 'stage') resetStagePlats();
   if (game.note.t > 0) game.note.t--;
   if (game.screen === 'select') tickSelect();
   else if (game.screen === 'stage') tickStage();
@@ -559,10 +561,10 @@ function drawStageSelect() {
   ctx.font = 'bold 40px system-ui, sans-serif';
   ctx.fillText('CHOOSE A STAGE', STAGE.w / 2, 64);
   // a grid of small previews, four to a row, with the picked stage's details underneath
-  const sc = 0.205, cw = STAGE.w * sc, ch = STAGE.h * sc, gx = 28, gy = 62;
+  const sc = 0.17, cw = STAGE.w * sc, ch = STAGE.h * sc, gx = 28, gy = 56;
   const x0 = (STAGE.w - STAGE_COLS * cw - (STAGE_COLS - 1) * gx) / 2;
   STAGES.forEach((st, k) => {
-    const x = x0 + (k % STAGE_COLS) * (cw + gx), y = 100 + Math.floor(k / STAGE_COLS) * (ch + gy);
+    const x = x0 + (k % STAGE_COLS) * (cw + gx), y = 88 + Math.floor(k / STAGE_COLS) * (ch + gy);
     ctx.save();
     ctx.beginPath(); ctx.rect(x, y, cw, ch); ctx.clip();
     ctx.translate(x, y);
@@ -580,7 +582,7 @@ function drawStageSelect() {
     ctx.font = '12px system-ui, sans-serif';
     ctx.fillText(st.school ? `Home of ${st.school}` : 'Neutral field', x + cw / 2, y + ch + 40, cw);
   });
-  const st = STAGES[game.stageIdx], y = 100 + Math.ceil(STAGES.length / STAGE_COLS) * (ch + gy) + 10;
+  const st = STAGES[game.stageIdx], y = 88 + Math.ceil(STAGES.length / STAGE_COLS) * (ch + gy) + 10;
   ctx.textAlign = 'center';
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 26px system-ui, sans-serif';

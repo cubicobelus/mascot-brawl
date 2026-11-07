@@ -15,7 +15,14 @@ const STAGE = {
   blast: { left: -140, right: 1420, top: -300, bottom: 900 },
   spawns: [{ x: 440, y: 520 }, { x: 840, y: 520 }],
   respawn: { x: 640, y: 120 },
+  extra: [], // extra pass-through platforms a stage hazard adds for the length of a fight (same shape as plats)
 };
+const PLATS_BASE = STAGE.plats.map(p => Object.assign({}, p));
+// puts the platforms back where they belong (a stage may slide them or add extras during a fight)
+function resetStagePlats() {
+  STAGE.plats.forEach((p, i) => Object.assign(p, PLATS_BASE[i]));
+  STAGE.extra.length = 0;
+}
 
 function drawLights(ctx, color) {
   for (const lx of [110, 1170]) {
